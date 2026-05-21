@@ -174,6 +174,8 @@ extern cl::opt<bool> ProfcheckDisableMetadataFixes;
 } // end namespace llvm
 
 static bool inSubLoop(BasicBlock *BB, Loop *CurLoop, LoopInfo *LI);
+static bool isFoldableInLoop(const Instruction &I, const Loop *CurLoop,
+                             const TargetTransformInfo *TTI);
 static bool isNotUsedOrFoldableInLoop(const Instruction &I, const Loop *CurLoop,
                                       const LoopSafetyInfo *SafetyInfo,
                                       TargetTransformInfo *TTI,
