@@ -930,6 +930,7 @@ bool llvm::hoistRegion(DomTreeNode *N, AAResults *AA, LoopInfo *LI,
       // to that block.
       if (CurLoop->hasLoopInvariantOperands(&I) &&
           canSinkOrHoistInst(I, AA, DT, CurLoop, MSSAU, true, Flags, ORE) &&
+          !isFoldableInLoop(I, CurLoop, TTI) &&
           isSafeToExecuteUnconditionally(I, DT, TLI, CurLoop, SafetyInfo, ORE,
                                          Preheader->getTerminator(), AC,
                                          AllowSpeculation)) {
