@@ -148,8 +148,6 @@ define void @test3(ptr noalias nocapture %a, ptr noalias nocapture readonly %b, 
 ; CHECK-NEXT:    [[CMP11:%.*]] = icmp sgt i32 [[N:%.*]], 0
 ; CHECK-NEXT:    br i1 [[CMP11]], label [[FOR_BODY_PREHEADER:%.*]], label [[FOR_END:%.*]]
 ; CHECK:       for.body.preheader:
-; CHECK-NEXT:    [[C2:%.*]] = getelementptr inbounds i32, ptr [[C:%.*]], i64 2
-; CHECK-NEXT:    [[TMP0:%.*]] = load i32, ptr [[C2]], align 4
 ; CHECK-NEXT:    br label [[FOR_BODY:%.*]]
 ; CHECK:       for.body:
 ; CHECK-NEXT:    [[INDVARS_IV:%.*]] = phi i64 [ [[INDVARS_IV_NEXT:%.*]], [[FOR_INC:%.*]] ], [ 0, [[FOR_BODY_PREHEADER]] ]
@@ -158,6 +156,8 @@ define void @test3(ptr noalias nocapture %a, ptr noalias nocapture readonly %b, 
 ; CHECK-NEXT:    [[CMP1:%.*]] = icmp sgt i32 [[TMP1]], 0
 ; CHECK-NEXT:    br i1 [[CMP1]], label [[IF_THEN:%.*]], label [[FOR_INC]]
 ; CHECK:       if.then:
+; CHECK-NEXT:    [[C2:%.*]] = getelementptr inbounds i32, ptr [[C:%.*]], i64 2
+; CHECK-NEXT:    [[TMP0:%.*]] = load i32, ptr [[C2]], align 4
 ; CHECK-NEXT:    [[ARRAYIDX3:%.*]] = getelementptr inbounds i32, ptr [[B:%.*]], i64 [[INDVARS_IV]]
 ; CHECK-NEXT:    [[TMP2:%.*]] = load i32, ptr [[ARRAYIDX3]], align 4
 ; CHECK-NEXT:    [[MUL:%.*]] = mul nsw i32 [[TMP2]], [[TMP0]]
@@ -211,7 +211,6 @@ define void @test4(ptr noalias nocapture %a, ptr noalias nocapture readonly %b, 
 ; CHECK-NEXT:    [[CMP11:%.*]] = icmp sgt i32 [[N:%.*]], 0
 ; CHECK-NEXT:    br i1 [[CMP11]], label [[FOR_BODY_PREHEADER:%.*]], label [[FOR_END:%.*]]
 ; CHECK:       for.body.preheader:
-; CHECK-NEXT:    [[C2:%.*]] = getelementptr inbounds i32, ptr [[C:%.*]], i64 2
 ; CHECK-NEXT:    br label [[FOR_BODY:%.*]]
 ; CHECK:       for.body:
 ; CHECK-NEXT:    [[INDVARS_IV:%.*]] = phi i64 [ [[INDVARS_IV_NEXT:%.*]], [[FOR_INC:%.*]] ], [ 0, [[FOR_BODY_PREHEADER]] ]
@@ -220,6 +219,7 @@ define void @test4(ptr noalias nocapture %a, ptr noalias nocapture readonly %b, 
 ; CHECK-NEXT:    [[CMP1:%.*]] = icmp sgt i32 [[TMP0]], 0
 ; CHECK-NEXT:    br i1 [[CMP1]], label [[IF_THEN:%.*]], label [[FOR_INC]]
 ; CHECK:       if.then:
+; CHECK-NEXT:    [[C2:%.*]] = getelementptr inbounds i32, ptr [[C:%.*]], i64 2
 ; CHECK-NEXT:    [[TMP1:%.*]] = load i32, ptr [[C2]], align 4
 ; CHECK-NEXT:    [[ARRAYIDX3:%.*]] = getelementptr inbounds i32, ptr [[B:%.*]], i64 [[INDVARS_IV]]
 ; CHECK-NEXT:    [[TMP2:%.*]] = load i32, ptr [[ARRAYIDX3]], align 4

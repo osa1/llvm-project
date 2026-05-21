@@ -49,12 +49,12 @@ define i8 @test_hoist_alloca() {
 ; CHECK-NEXT:  entry:
 ; CHECK-NEXT:    [[A:%.*]] = alloca [32 x i8], align 1
 ; CHECK-NEXT:    call void @init(ptr [[A]])
-; CHECK-NEXT:    [[ADDR:%.*]] = getelementptr i8, ptr [[A]], i32 31
-; CHECK-NEXT:    [[RES:%.*]] = load i8, ptr [[ADDR]], align 1
 ; CHECK-NEXT:    br label [[FOR_BODY:%.*]]
 ; CHECK:       for.body:
 ; CHECK-NEXT:    [[IV:%.*]] = phi i64 [ [[IV_NEXT:%.*]], [[FOR_BODY]] ], [ 0, [[ENTRY:%.*]] ]
 ; CHECK-NEXT:    call void @unknown()
+; CHECK-NEXT:    [[ADDR:%.*]] = getelementptr i8, ptr [[A]], i32 31
+; CHECK-NEXT:    [[RES:%.*]] = load i8, ptr [[ADDR]], align 1
 ; CHECK-NEXT:    call void @use(i8 [[RES]])
 ; CHECK-NEXT:    [[IV_NEXT]] = add nuw nsw i64 [[IV]], 1
 ; CHECK-NEXT:    [[EXITCOND:%.*]] = icmp eq i64 [[IV_NEXT]], 200
@@ -133,11 +133,11 @@ define i8 @test_hoist_malloc() {
 ; CHECK-NEXT:  entry:
 ; CHECK-NEXT:    [[A_RAW:%.*]] = call nonnull ptr @malloc(i64 32)
 ; CHECK-NEXT:    call void @init(ptr [[A_RAW]])
-; CHECK-NEXT:    [[ADDR:%.*]] = getelementptr i8, ptr [[A_RAW]], i32 31
 ; CHECK-NEXT:    br label [[FOR_BODY:%.*]]
 ; CHECK:       for.body:
 ; CHECK-NEXT:    [[IV:%.*]] = phi i64 [ [[IV_NEXT:%.*]], [[FOR_BODY]] ], [ 0, [[ENTRY:%.*]] ]
 ; CHECK-NEXT:    call void @unknown()
+; CHECK-NEXT:    [[ADDR:%.*]] = getelementptr i8, ptr [[A_RAW]], i32 31
 ; CHECK-NEXT:    [[RES:%.*]] = load i8, ptr [[ADDR]], align 1
 ; CHECK-NEXT:    call void @use(i8 [[RES]])
 ; CHECK-NEXT:    [[IV_NEXT]] = add nuw nsw i64 [[IV]], 1
@@ -173,11 +173,11 @@ define i8 @test_hoist_malloc_leak() nofree nosync {
 ; CHECK-NEXT:  entry:
 ; CHECK-NEXT:    [[A_RAW:%.*]] = call nonnull ptr @malloc(i64 32)
 ; CHECK-NEXT:    call void @init(ptr [[A_RAW]])
-; CHECK-NEXT:    [[ADDR:%.*]] = getelementptr i8, ptr [[A_RAW]], i32 31
 ; CHECK-NEXT:    br label [[FOR_BODY:%.*]]
 ; CHECK:       for.body:
 ; CHECK-NEXT:    [[IV:%.*]] = phi i64 [ [[IV_NEXT:%.*]], [[FOR_BODY]] ], [ 0, [[ENTRY:%.*]] ]
 ; CHECK-NEXT:    call void @unknown()
+; CHECK-NEXT:    [[ADDR:%.*]] = getelementptr i8, ptr [[A_RAW]], i32 31
 ; CHECK-NEXT:    [[RES:%.*]] = load i8, ptr [[ADDR]], align 1
 ; CHECK-NEXT:    call void @use(i8 [[RES]])
 ; CHECK-NEXT:    [[IV_NEXT]] = add nuw nsw i64 [[IV]], 1
@@ -219,13 +219,13 @@ define void @test_hoist_malloc_cond_free(i1 %c) {
 ; CHECK-NEXT:    call void @free(ptr [[A_RAW]])
 ; CHECK-NEXT:    br label [[PREHEADER]]
 ; CHECK:       preheader:
-; CHECK-NEXT:    [[ADDR:%.*]] = getelementptr i8, ptr [[A_RAW]], i32 31
 ; CHECK-NEXT:    br label [[FOR_BODY:%.*]]
 ; CHECK:       for.body:
 ; CHECK-NEXT:    [[IV:%.*]] = phi i64 [ [[IV_NEXT:%.*]], [[LOOP_LATCH:%.*]] ], [ 0, [[PREHEADER]] ]
 ; CHECK-NEXT:    br i1 [[C]], label [[FOR_END:%.*]], label [[LOOP_LATCH]]
 ; CHECK:       loop.latch:
 ; CHECK-NEXT:    call void @unknown()
+; CHECK-NEXT:    [[ADDR:%.*]] = getelementptr i8, ptr [[A_RAW]], i32 31
 ; CHECK-NEXT:    [[RES:%.*]] = load i8, ptr [[ADDR]], align 1
 ; CHECK-NEXT:    call void @use(i8 [[RES]])
 ; CHECK-NEXT:    [[IV_NEXT]] = add nuw nsw i64 [[IV]], 1
@@ -327,11 +327,11 @@ define i8 @test_hoist_allocsize() {
 ; CHECK-NEXT:  entry:
 ; CHECK-NEXT:    [[A_RAW:%.*]] = call nonnull ptr @my_alloc(i64 32)
 ; CHECK-NEXT:    call void @init(ptr [[A_RAW]])
-; CHECK-NEXT:    [[ADDR:%.*]] = getelementptr i8, ptr [[A_RAW]], i32 31
 ; CHECK-NEXT:    br label [[FOR_BODY:%.*]]
 ; CHECK:       for.body:
 ; CHECK-NEXT:    [[IV:%.*]] = phi i64 [ [[IV_NEXT:%.*]], [[FOR_BODY]] ], [ 0, [[ENTRY:%.*]] ]
 ; CHECK-NEXT:    call void @unknown()
+; CHECK-NEXT:    [[ADDR:%.*]] = getelementptr i8, ptr [[A_RAW]], i32 31
 ; CHECK-NEXT:    [[RES:%.*]] = load i8, ptr [[ADDR]], align 1
 ; CHECK-NEXT:    call void @use(i8 [[RES]])
 ; CHECK-NEXT:    [[IV_NEXT]] = add nuw nsw i64 [[IV]], 1
@@ -367,11 +367,11 @@ define i8 @test_hoist_allocsize_leak() nofree nosync {
 ; CHECK-NEXT:  entry:
 ; CHECK-NEXT:    [[A_RAW:%.*]] = call nonnull ptr @my_alloc(i64 32)
 ; CHECK-NEXT:    call void @init(ptr [[A_RAW]])
-; CHECK-NEXT:    [[ADDR:%.*]] = getelementptr i8, ptr [[A_RAW]], i32 31
 ; CHECK-NEXT:    br label [[FOR_BODY:%.*]]
 ; CHECK:       for.body:
 ; CHECK-NEXT:    [[IV:%.*]] = phi i64 [ [[IV_NEXT:%.*]], [[FOR_BODY]] ], [ 0, [[ENTRY:%.*]] ]
 ; CHECK-NEXT:    call void @unknown()
+; CHECK-NEXT:    [[ADDR:%.*]] = getelementptr i8, ptr [[A_RAW]], i32 31
 ; CHECK-NEXT:    [[RES:%.*]] = load i8, ptr [[ADDR]], align 1
 ; CHECK-NEXT:    call void @use(i8 [[RES]])
 ; CHECK-NEXT:    [[IV_NEXT]] = add nuw nsw i64 [[IV]], 1
