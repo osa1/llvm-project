@@ -1325,7 +1325,7 @@ static bool isFoldableInLoop(const Instruction &I, const Loop *CurLoop,
       const Instruction *UI = cast<Instruction>(U);
       if (CurLoop->contains(UI) &&
           (BB != UI->getParent() ||
-           (!isa<StoreInst>(UI) && !isa<LoadInst>(UI))))
+           (!isa<StoreInst>(UI) && !isa<LoadInst>(UI) && !isa<MemIntrinsic>(UI))))
         return false;
     }
     return true;
