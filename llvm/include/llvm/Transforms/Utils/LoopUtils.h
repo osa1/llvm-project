@@ -181,7 +181,7 @@ LLVM_ABI bool sinkRegionForLoopNest(DomTreeNode *, AAResults *, LoopInfo *,
 /// guaranteed to execute in the loop, but are safe to speculatively execute.
 LLVM_ABI bool hoistRegion(DomTreeNode *, AAResults *, LoopInfo *,
                           DominatorTree *, AssumptionCache *,
-                          TargetLibraryInfo *, Loop *, MemorySSAUpdater &,
+                          TargetLibraryInfo *, TargetTransformInfo *, Loop *, MemorySSAUpdater &,
                           ScalarEvolution *, ICFLoopSafetyInfo *,
                           SinkAndHoistLICMFlags &, OptimizationRemarkEmitter *,
                           bool, bool AllowSpeculation);
