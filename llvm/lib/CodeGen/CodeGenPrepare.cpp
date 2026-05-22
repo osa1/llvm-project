@@ -2708,7 +2708,8 @@ bool CodeGenPrepare::optimizeCallInst(CallInst *CI, ModifyDT &ModifiedDT) {
   // If this is a memcpy (or similar) then we may be able to improve the
   // alignment.
   if (MemIntrinsic *MI = dyn_cast<MemIntrinsic>(CI)) {
-    Align DestAlign = getKnownAlignment(MI->getDest(), *DL);
+    Value* Dest = MI->getDest();
+    Align DestAlign = getKnownAlignment(Dest, *DL);
     MaybeAlign MIDestAlign = MI->getDestAlign();
     if (!MIDestAlign || DestAlign > *MIDestAlign)
       MI->setDestAlignment(DestAlign);
@@ -2718,6 +2719,10 @@ bool CodeGenPrepare::optimizeCallInst(CallInst *CI, ModifyDT &ModifiedDT) {
       if (!MTISrcAlign || SrcAlign > *MTISrcAlign)
         MTI->setSourceAlignment(SrcAlign);
     }
+
+    unsigned DestAS = Dest->getType()->getPointerAddressSpace();
+    if (optimizeMemoryInst(MI, Dest, Type::getInt8Ty(CI->getContext()), DestAS))
+      return true;
   }
 
   // If we have a cold call site, try to sink addressing computation into the
