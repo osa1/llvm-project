@@ -1781,6 +1781,10 @@ public:
   getMemIntrinsicInstrCost(const MemIntrinsicCostAttributes &MICA,
                            TTI::TargetCostKind CostKind) const;
 
+  /// \returns The number of memory operations performed for a given memcpy,
+  /// memset, or memmove instruction. Returns -1 if a call is used.
+  int getNumMemOps(const IntrinsicInst *I) const;
+
   /// \returns The cost of Call instructions.
   LLVM_ABI InstructionCost getCallInstrCost(
       Function *F, Type *RetTy, ArrayRef<Type *> Tys,
