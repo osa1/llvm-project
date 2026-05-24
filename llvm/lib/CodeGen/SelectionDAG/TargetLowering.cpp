@@ -305,6 +305,73 @@ bool TargetLowering::findOptimalMemOpLowering(
   return true;
 }
 
+/// Given a memcpy/memset/memmove instruction, return the number of memory
+/// operations performed, via querying findOptimalMemOpLowering. Returns -1 if a
+/// call is used.
+int TargetLowering::getInlineMemOpCount(const IntrinsicInst *I) const {
+  MemOp MOp;
+  unsigned DstAddrSpace = ~0u;
+  unsigned SrcAddrSpace = ~0u;
+  const Function *F = I->getParent()->getParent();
+
+  if (const auto *MC = dyn_cast<MemTransferInst>(I)) {
+    ConstantInt *C = dyn_cast<ConstantInt>(MC->getLength());
+    // If 'size' is not a constant, a library call will be generated.
+    if (!C)
+      return -1;
+
+    const unsigned Size = C->getValue().getZExtValue();
+    const Align DstAlign = MC->getDestAlign().valueOrOne();
+    const Align SrcAlign = MC->getSourceAlign().valueOrOne();
+
+    MOp = MemOp::Copy(Size, /*DstAlignCanChange*/ false, DstAlign, SrcAlign,
+                      /*IsVolatile*/ false);
+    DstAddrSpace = MC->getDestAddressSpace();
+    SrcAddrSpace = MC->getSourceAddressSpace();
+  } else if (const auto *MS = dyn_cast<MemSetInst>(I)) {
+    ConstantInt *C = dyn_cast<ConstantInt>(MS->getLength());
+    // If 'size' is not a constant, a library call will be generated.
+    if (!C)
+      return -1;
+
+    const unsigned Size = C->getValue().getZExtValue();
+    const Align DstAlign = MS->getDestAlign().valueOrOne();
+
+    MOp = MemOp::Set(Size, /*DstAlignCanChange*/ false, DstAlign,
+                     /*IsZeroMemset*/ false, /*IsVolatile*/ false);
+    DstAddrSpace = MS->getDestAddressSpace();
+  } else
+    llvm_unreachable("Expected a memcpy/move or memset!");
+
+  unsigned Limit, Factor = 2;
+  switch (I->getIntrinsicID()) {
+  case Intrinsic::memcpy:
+    Limit = getMaxStoresPerMemcpy(F->hasMinSize());
+    break;
+  case Intrinsic::memmove:
+    Limit = getMaxStoresPerMemmove(F->hasMinSize());
+    break;
+  case Intrinsic::memset:
+    Limit = getMaxStoresPerMemset(F->hasMinSize());
+    Factor = 1;
+    break;
+  default:
+    llvm_unreachable("Expected a memcpy/move or memset!");
+  }
+
+  // MemOps will be poplulated with a list of data types that needs to be
+  // loaded and stored. That's why we multiply the number of elements by 2 to
+  // get the cost for this memcpy.
+  std::vector<EVT> MemOps;
+  LLVMContext &C = F->getContext();
+  if (findOptimalMemOpLowering(C, MemOps, Limit, MOp, DstAddrSpace,
+                               SrcAddrSpace, F->getAttributes(), nullptr))
+    return MemOps.size() * Factor;
+
+  // If we can't find an optimal memop lowering, return the default cost
+  return -1;
+}
+
 /// Soften the operands of a comparison. This code is shared among BR_CC,
 /// SELECT_CC, and SETCC handlers.
 void TargetLowering::softenSetCCOperands(SelectionDAG &DAG, EVT VT,

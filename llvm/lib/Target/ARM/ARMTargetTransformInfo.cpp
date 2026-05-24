@@ -1210,78 +1210,9 @@ bool ARMTTIImpl::isLegalMaskedGather(Type *Ty, Align Alignment) const {
           (EltWidth == 16 && Alignment >= 2) || EltWidth == 8);
 }
 
-/// Given a memcpy/memset/memmove instruction, return the number of memory
-/// operations performed, via querying findOptimalMemOpLowering. Returns -1 if a
-/// call is used.
-int ARMTTIImpl::getNumMemOps(const IntrinsicInst *I) const {
-  MemOp MOp;
-  unsigned DstAddrSpace = ~0u;
-  unsigned SrcAddrSpace = ~0u;
-  const Function *F = I->getParent()->getParent();
-
-  if (const auto *MC = dyn_cast<MemTransferInst>(I)) {
-    ConstantInt *C = dyn_cast<ConstantInt>(MC->getLength());
-    // If 'size' is not a constant, a library call will be generated.
-    if (!C)
-      return -1;
-
-    const unsigned Size = C->getValue().getZExtValue();
-    const Align DstAlign = MC->getDestAlign().valueOrOne();
-    const Align SrcAlign = MC->getSourceAlign().valueOrOne();
-
-    MOp = MemOp::Copy(Size, /*DstAlignCanChange*/ false, DstAlign, SrcAlign,
-                      /*IsVolatile*/ false);
-    DstAddrSpace = MC->getDestAddressSpace();
-    SrcAddrSpace = MC->getSourceAddressSpace();
-  }
-  else if (const auto *MS = dyn_cast<MemSetInst>(I)) {
-    ConstantInt *C = dyn_cast<ConstantInt>(MS->getLength());
-    // If 'size' is not a constant, a library call will be generated.
-    if (!C)
-      return -1;
-
-    const unsigned Size = C->getValue().getZExtValue();
-    const Align DstAlign = MS->getDestAlign().valueOrOne();
-
-    MOp = MemOp::Set(Size, /*DstAlignCanChange*/ false, DstAlign,
-                     /*IsZeroMemset*/ false, /*IsVolatile*/ false);
-    DstAddrSpace = MS->getDestAddressSpace();
-  }
-  else
-    llvm_unreachable("Expected a memcpy/move or memset!");
-
-  unsigned Limit, Factor = 2;
-  switch(I->getIntrinsicID()) {
-    case Intrinsic::memcpy:
-      Limit = TLI->getMaxStoresPerMemcpy(F->hasMinSize());
-      break;
-    case Intrinsic::memmove:
-      Limit = TLI->getMaxStoresPerMemmove(F->hasMinSize());
-      break;
-    case Intrinsic::memset:
-      Limit = TLI->getMaxStoresPerMemset(F->hasMinSize());
-      Factor = 1;
-      break;
-    default:
-      llvm_unreachable("Expected a memcpy/move or memset!");
-  }
-
-  // MemOps will be poplulated with a list of data types that needs to be
-  // loaded and stored. That's why we multiply the number of elements by 2 to
-  // get the cost for this memcpy.
-  std::vector<EVT> MemOps;
-  LLVMContext &C = F->getContext();
-  if (getTLI()->findOptimalMemOpLowering(C, MemOps, Limit, MOp, DstAddrSpace,
-                                         SrcAddrSpace, F->getAttributes(),
-                                         nullptr))
-    return MemOps.size() * Factor;
-
-  // If we can't find an optimal memop lowering, return the default cost
-  return -1;
-}
-
 InstructionCost ARMTTIImpl::getMemcpyCost(const Instruction *I) const {
-  int NumOps = getNumMemOps(cast<IntrinsicInst>(I));
+  int NumOps =
+      ST->getTargetLowering()->getInlineMemOpCount(cast<IntrinsicInst>(I));
 
   // To model the cost of a library call, we assume 1 for the call, and
   // 3 for the argument setup.
@@ -2311,7 +2242,7 @@ bool ARMTTIImpl::maybeLoweredToCall(Instruction &I) const {
         case Intrinsic::memcpy:
         case Intrinsic::memset:
         case Intrinsic::memmove:
-          return getNumMemOps(II) == -1;
+          return ST->getTargetLowering()->getInlineMemOpCount(II) == -1;
         default:
           if (const Function *F = Call->getCalledFunction())
             return isLoweredToCall(F);
