@@ -2096,10 +2096,6 @@ public:
   /// have to be legal as the hook is used before type legalization.
   virtual bool isSafeMemOpType(MVT /*VT*/) const { return true; }
 
-  virtual int getInlineMemOpCount(const IntrinsicInst *I) const {
-    return -1; // library call
-  }
-
   /// Return lower limit for number of blocks in a jump table.
   virtual unsigned getMinimumJumpTableEntries() const;
 
@@ -4269,7 +4265,7 @@ public:
   /// Given a memcpy/memset/memmove instruction, return the number of memory
   /// operations performed, via querying findOptimalMemOpLowering. Returns -1 if
   /// a call is used.
-  virtual int getInlineMemOpCount(const IntrinsicInst *I) const override;
+  virtual int getInlineMemOpCount(const IntrinsicInst *I) const;
 
   /// Check to see if the specified operand of the specified instruction is a
   /// constant integer.  If so, check to see if there are any bits set in the
