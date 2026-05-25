@@ -2724,7 +2724,8 @@ bool CodeGenPrepare::optimizeCallInst(CallInst *CI, ModifyDT &ModifiedDT) {
     }
 
     unsigned DestAS = Dest->getType()->getPointerAddressSpace();
-    if (optimizeMemoryInst(MI, Dest, Type::getInt8Ty(CI->getContext()), DestAS))
+    if (TLI->getInlineMemOpCount(MI) != -1 &&
+        optimizeMemoryInst(MI, Dest, Type::getInt8Ty(CI->getContext()), DestAS))
       return true;
   }
 
