@@ -318,8 +318,11 @@ int TargetLowering::getInlineMemOpCount(const IntrinsicInst *I) const {
       return -1;
 
     const unsigned Size = C->getValue().getZExtValue();
-    const Align DstAlign = MC->getDestAlign().valueOrOne();
     const Align SrcAlign = MC->getSourceAlign().valueOrOne();
+
+    // TODO FIXME NOTE: This changes the original ARMTTIImpl::getNumMemOps to
+    // match the isel behavior of dest alignment. Document this properly.
+    const Align DstAlign = std::min(SrcAlign, MC->getDestAlign().valueOrOne());
 
     MOp = MemOp::Copy(Size, /*DstAlignCanChange*/ false, DstAlign, SrcAlign,
                       /*IsVolatile*/ false);
@@ -343,12 +346,14 @@ int TargetLowering::getInlineMemOpCount(const IntrinsicInst *I) const {
   unsigned Limit, Factor = 2;
   switch (I->getIntrinsicID()) {
   case Intrinsic::memcpy:
+  case Intrinsic::memcpy_inline:
     Limit = getMaxStoresPerMemcpy(F->hasMinSize());
     break;
   case Intrinsic::memmove:
     Limit = getMaxStoresPerMemmove(F->hasMinSize());
     break;
   case Intrinsic::memset:
+  case Intrinsic::memset_inline:
     Limit = getMaxStoresPerMemset(F->hasMinSize());
     Factor = 1;
     break;
