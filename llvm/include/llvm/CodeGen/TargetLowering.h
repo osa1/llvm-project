@@ -2096,7 +2096,6 @@ public:
   /// have to be legal as the hook is used before type legalization.
   virtual bool isSafeMemOpType(MVT /*VT*/) const { return true; }
 
-  /// NEW TODO DOCUMENT
   virtual int getInlineMemOpCount(const IntrinsicInst *I) const {
     return -1; // library call
   }
@@ -4267,6 +4266,9 @@ public:
                                         const AttributeList &FuncAttributes,
                                         EVT *LargestVT = nullptr) const;
 
+  /// Given a memcpy/memset/memmove instruction, return the number of memory
+  /// operations performed, via querying findOptimalMemOpLowering. Returns -1 if
+  /// a call is used.
   virtual int getInlineMemOpCount(const IntrinsicInst *I) const override;
 
   /// Check to see if the specified operand of the specified instruction is a

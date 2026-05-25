@@ -305,9 +305,6 @@ bool TargetLowering::findOptimalMemOpLowering(
   return true;
 }
 
-/// Given a memcpy/memset/memmove instruction, return the number of memory
-/// operations performed, via querying findOptimalMemOpLowering. Returns -1 if a
-/// call is used.
 int TargetLowering::getInlineMemOpCount(const IntrinsicInst *I) const {
   MemOp MOp;
   unsigned DstAddrSpace = ~0u;
