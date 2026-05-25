@@ -1211,7 +1211,8 @@ bool ARMTTIImpl::isLegalMaskedGather(Type *Ty, Align Alignment) const {
 }
 
 InstructionCost ARMTTIImpl::getMemcpyCost(const Instruction *I) const {
-  int NumOps = getNumMemOps(cast<IntrinsicInst>(I));
+  int NumOps =
+      ST->getTargetLowering()->getInlineMemOpCount(cast<IntrinsicInst>(I));
 
   // To model the cost of a library call, we assume 1 for the call, and
   // 3 for the argument setup.
@@ -2241,7 +2242,7 @@ bool ARMTTIImpl::maybeLoweredToCall(Instruction &I) const {
         case Intrinsic::memcpy:
         case Intrinsic::memset:
         case Intrinsic::memmove:
-          return getNumMemOps(II) == -1;
+          return ST->getTargetLowering()->getInlineMemOpCount(II) == -1;
         default:
           if (const Function *F = Call->getCalledFunction())
             return isLoweredToCall(F);

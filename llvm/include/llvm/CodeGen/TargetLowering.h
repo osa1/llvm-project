@@ -2096,6 +2096,11 @@ public:
   /// have to be legal as the hook is used before type legalization.
   virtual bool isSafeMemOpType(MVT /*VT*/) const { return true; }
 
+  /// NEW TODO DOCUMENT
+  virtual int getInlineMemOpCount(const IntrinsicInst *I) const {
+    return -1; // library call
+  }
+
   /// Return lower limit for number of blocks in a jump table.
   virtual unsigned getMinimumJumpTableEntries() const;
 
@@ -4261,6 +4266,8 @@ public:
                                         unsigned DstAS, unsigned SrcAS,
                                         const AttributeList &FuncAttributes,
                                         EVT *LargestVT = nullptr) const;
+
+  virtual int getInlineMemOpCount(const IntrinsicInst *I) const override;
 
   /// Check to see if the specified operand of the specified instruction is a
   /// constant integer.  If so, check to see if there are any bits set in the
