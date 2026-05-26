@@ -319,9 +319,6 @@ int TargetLowering::getInlineMemOpCount(const IntrinsicInst *I) const {
 
     const unsigned Size = C->getValue().getZExtValue();
     const Align SrcAlign = MC->getSourceAlign().valueOrOne();
-
-    // TODO FIXME NOTE: This changes the original ARMTTIImpl::getNumMemOps to
-    // match the isel behavior of dest alignment. Document this properly.
     const Align DstAlign = std::min(SrcAlign, MC->getDestAlign().valueOrOne());
 
     MOp = MemOp::Copy(Size, /*DstAlignCanChange*/ false, DstAlign, SrcAlign,
