@@ -343,15 +343,20 @@ int TargetLowering::getInlineMemOpCount(const IntrinsicInst *I) const {
   unsigned Limit, Factor = 2;
   switch (I->getIntrinsicID()) {
   case Intrinsic::memcpy:
-  case Intrinsic::memcpy_inline:
     Limit = getMaxStoresPerMemcpy(F->hasMinSize());
+    break;
+  case Intrinsic::memcpy_inline:
+    Limit = ~0U;
     break;
   case Intrinsic::memmove:
     Limit = getMaxStoresPerMemmove(F->hasMinSize());
     break;
   case Intrinsic::memset:
-  case Intrinsic::memset_inline:
     Limit = getMaxStoresPerMemset(F->hasMinSize());
+    Factor = 1;
+    break;
+  case Intrinsic::memset_inline:
+    Limit = ~0U;
     Factor = 1;
     break;
   default:
