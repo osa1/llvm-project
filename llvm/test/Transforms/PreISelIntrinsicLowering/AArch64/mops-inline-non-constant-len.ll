@@ -7,18 +7,7 @@ declare void @llvm.memset.inline.p0.i64(ptr nocapture writeonly, i8, i64, i1 imm
 
 define void @memcpy_inline_n(ptr %dst, ptr %src, i64 %n) {
 ; CHECK-LABEL: @memcpy_inline_n(
-; CHECK-NEXT:    [[TMP1:%.*]] = icmp ne i64 [[N:%.*]], 0
-; CHECK-NEXT:    br i1 [[TMP1]], label [[DYNAMIC_MEMCPY_EXPANSION_MAIN_BODY:%.*]], label [[DYNAMIC_MEMCPY_POST_EXPANSION:%.*]]
-; CHECK:       dynamic-memcpy-expansion-main-body:
-; CHECK-NEXT:    [[LOOP_INDEX:%.*]] = phi i64 [ 0, [[TMP0:%.*]] ], [ [[TMP5:%.*]], [[DYNAMIC_MEMCPY_EXPANSION_MAIN_BODY]] ]
-; CHECK-NEXT:    [[TMP2:%.*]] = getelementptr inbounds i8, ptr [[SRC:%.*]], i64 [[LOOP_INDEX]]
-; CHECK-NEXT:    [[TMP3:%.*]] = load i8, ptr [[TMP2]], align 1
-; CHECK-NEXT:    [[TMP4:%.*]] = getelementptr inbounds i8, ptr [[DST:%.*]], i64 [[LOOP_INDEX]]
-; CHECK-NEXT:    store i8 [[TMP3]], ptr [[TMP4]], align 1
-; CHECK-NEXT:    [[TMP5]] = add i64 [[LOOP_INDEX]], 1
-; CHECK-NEXT:    [[TMP6:%.*]] = icmp ult i64 [[TMP5]], [[N]]
-; CHECK-NEXT:    br i1 [[TMP6]], label [[DYNAMIC_MEMCPY_EXPANSION_MAIN_BODY]], label [[DYNAMIC_MEMCPY_POST_EXPANSION]]
-; CHECK:       dynamic-memcpy-post-expansion:
+; CHECK-NEXT:    call void @llvm.memcpy.inline.p0.p0.i64(ptr [[DST:%.*]], ptr [[SRC:%.*]], i64 [[N:%.*]], i1 false)
 ; CHECK-NEXT:    ret void
 ;
   call void @llvm.memcpy.inline.p0.p0.i64(ptr %dst, ptr %src, i64 %n, i1 false)
@@ -27,16 +16,7 @@ define void @memcpy_inline_n(ptr %dst, ptr %src, i64 %n) {
 
 define void @memset_inline_n(ptr %dst, i8 %v, i64 %n) {
 ; CHECK-LABEL: @memset_inline_n(
-; CHECK-NEXT:    [[TMP1:%.*]] = icmp ne i64 [[N:%.*]], 0
-; CHECK-NEXT:    br i1 [[TMP1]], label [[DYNAMIC_MEMSET_EXPANSION_MAIN_BODY:%.*]], label [[DYNAMIC_MEMSET_POST_EXPANSION:%.*]]
-; CHECK:       dynamic-memset-expansion-main-body:
-; CHECK-NEXT:    [[LOOP_INDEX:%.*]] = phi i64 [ 0, [[TMP0:%.*]] ], [ [[TMP3:%.*]], [[DYNAMIC_MEMSET_EXPANSION_MAIN_BODY]] ]
-; CHECK-NEXT:    [[TMP2:%.*]] = getelementptr inbounds i8, ptr [[DST:%.*]], i64 [[LOOP_INDEX]]
-; CHECK-NEXT:    store i8 [[V:%.*]], ptr [[TMP2]], align 1
-; CHECK-NEXT:    [[TMP3]] = add i64 [[LOOP_INDEX]], 1
-; CHECK-NEXT:    [[TMP4:%.*]] = icmp ult i64 [[TMP3]], [[N]]
-; CHECK-NEXT:    br i1 [[TMP4]], label [[DYNAMIC_MEMSET_EXPANSION_MAIN_BODY]], label [[DYNAMIC_MEMSET_POST_EXPANSION]]
-; CHECK:       dynamic-memset-post-expansion:
+; CHECK-NEXT:    call void @llvm.memset.inline.p0.i64(ptr [[DST:%.*]], i8 [[V:%.*]], i64 [[N:%.*]], i1 false)
 ; CHECK-NEXT:    ret void
 ;
   call void @llvm.memset.inline.p0.i64(ptr %dst, i8 %v, i64 %n, i1 false)

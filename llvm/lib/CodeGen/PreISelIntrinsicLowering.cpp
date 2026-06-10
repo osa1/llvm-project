@@ -346,12 +346,11 @@ bool PreISelIntrinsicLowering::expandMemIntrinsicUses(
       break;
     }
     case Intrinsic::memcpy_inline: {
-      // TODO: Document when we expand here.
       auto *Memcpy = cast<MemCpyInst>(Inst);
       Function *ParentFunc = Memcpy->getFunction();
       const TargetTransformInfo &TTI = LookupTTI(*ParentFunc);
-      if (isa<ConstantInt>(Memcpy->getLength()) &&
-          (TTI.hasMemIntrinsicInstructions() ||
+      if (TTI.hasMemIntrinsicInstructions() ||
+          (isa<ConstantInt>(Memcpy->getLength()) &&
            !shouldExpandMemIntrinsicWithSize(Memcpy->getLength(), TTI)))
         break;
 
@@ -394,12 +393,11 @@ bool PreISelIntrinsicLowering::expandMemIntrinsicUses(
       break;
     }
     case Intrinsic::memset_inline: {
-      // TODO: Document when we expand here.
       auto *Memset = cast<MemSetInst>(Inst);
       Function *ParentFunc = Memset->getFunction();
       const TargetTransformInfo &TTI = LookupTTI(*ParentFunc);
-      if (isa<ConstantInt>(Memset->getLength()) &&
-          (TTI.hasMemIntrinsicInstructions() ||
+      if (TTI.hasMemIntrinsicInstructions() ||
+          (isa<ConstantInt>(Memset->getLength()) &&
            !shouldExpandMemIntrinsicWithSize(Memset->getLength(), TTI)))
         break;
 

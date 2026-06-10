@@ -17,30 +17,8 @@ define void @memcpy_32(ptr %dst, ptr %src) nounwind !prof !0 {
 define void @memcpy_x(ptr %dst, ptr %src, i64 %x) nounwind  !prof !0 {
 ; CHECK-LABEL: define void @memcpy_x(
 ; CHECK-SAME: ptr [[DST:%.*]], ptr [[SRC:%.*]], i64 [[X:%.*]]) #[[ATTR0]] !prof [[PROF0]] {
-; CHECK-NEXT:    [[TMP1:%.*]] = icmp ne i64 [[X]], 0
-; CHECK-NEXT:    br i1 [[TMP1]], label %[[DYNAMIC_MEMCPY_EXPANSION_MAIN_BODY:.*]], label %[[DYNAMIC_MEMCPY_POST_EXPANSION:.*]], !prof [[PROF2:![0-9]+]]
-; CHECK:       [[DYNAMIC_MEMCPY_EXPANSION_MAIN_BODY]]:
-; CHECK-NEXT:    [[LOOP_INDEX:%.*]] = phi i64 [ 0, [[TMP0:%.*]] ], [ [[TMP5:%.*]], %[[DYNAMIC_MEMCPY_EXPANSION_MAIN_BODY]] ]
-; CHECK-NEXT:    [[TMP2:%.*]] = getelementptr inbounds i8, ptr [[SRC]], i64 [[LOOP_INDEX]]
-; CHECK-NEXT:    [[TMP3:%.*]] = load i8, ptr [[TMP2]], align 1
-; CHECK-NEXT:    [[TMP4:%.*]] = getelementptr inbounds i8, ptr [[DST]], i64 [[LOOP_INDEX]]
-; CHECK-NEXT:    store i8 [[TMP3]], ptr [[TMP4]], align 1
-; CHECK-NEXT:    [[TMP5]] = add i64 [[LOOP_INDEX]], 1
-; CHECK-NEXT:    [[TMP6:%.*]] = icmp ult i64 [[TMP5]], [[X]]
-; CHECK-NEXT:    br i1 [[TMP6]], label %[[DYNAMIC_MEMCPY_EXPANSION_MAIN_BODY]], label %[[DYNAMIC_MEMCPY_POST_EXPANSION]], !prof [[PROF2]]
-; CHECK:       [[DYNAMIC_MEMCPY_POST_EXPANSION]]:
-; CHECK-NEXT:    [[TMP7:%.*]] = icmp ne i64 [[X]], 0
-; CHECK-NEXT:    br i1 [[TMP7]], label %[[DYNAMIC_MEMCPY_EXPANSION_MAIN_BODY2:.*]], label %[[DYNAMIC_MEMCPY_POST_EXPANSION1:.*]], !prof [[PROF3:![0-9]+]]
-; CHECK:       [[DYNAMIC_MEMCPY_EXPANSION_MAIN_BODY2]]:
-; CHECK-NEXT:    [[LOOP_INDEX3:%.*]] = phi i64 [ 0, %[[DYNAMIC_MEMCPY_POST_EXPANSION]] ], [ [[TMP11:%.*]], %[[DYNAMIC_MEMCPY_EXPANSION_MAIN_BODY2]] ]
-; CHECK-NEXT:    [[TMP8:%.*]] = getelementptr inbounds i8, ptr [[SRC]], i64 [[LOOP_INDEX3]]
-; CHECK-NEXT:    [[TMP9:%.*]] = load volatile i8, ptr [[TMP8]], align 1
-; CHECK-NEXT:    [[TMP10:%.*]] = getelementptr inbounds i8, ptr [[DST]], i64 [[LOOP_INDEX3]]
-; CHECK-NEXT:    store volatile i8 [[TMP9]], ptr [[TMP10]], align 1
-; CHECK-NEXT:    [[TMP11]] = add i64 [[LOOP_INDEX3]], 1
-; CHECK-NEXT:    [[TMP12:%.*]] = icmp ult i64 [[TMP11]], [[X]]
-; CHECK-NEXT:    br i1 [[TMP12]], label %[[DYNAMIC_MEMCPY_EXPANSION_MAIN_BODY2]], label %[[DYNAMIC_MEMCPY_POST_EXPANSION1]], !prof [[PROF4:![0-9]+]]
-; CHECK:       [[DYNAMIC_MEMCPY_POST_EXPANSION1]]:
+; CHECK-NEXT:    call void @llvm.memcpy.inline.p0.p0.i64(ptr [[DST]], ptr [[SRC]], i64 [[X]], i1 false)
+; CHECK-NEXT:    tail call void @llvm.memcpy.inline.p0.p0.i64(ptr [[DST]], ptr [[SRC]], i64 [[X]], i1 true), !prof [[PROF1]]
 ; CHECK-NEXT:    ret void
 ;
   call void @llvm.memcpy.inline.p0.p0.i64(ptr %dst, ptr %src, i64 %x, i1 0)
@@ -56,7 +34,4 @@ define void @memcpy_x(ptr %dst, ptr %src, i64 %x) nounwind  !prof !0 {
 ;.
 ; CHECK: [[PROF0]] = !{!"function_entry_count", i32 10}
 ; CHECK: [[PROF1]] = !{!"VP", i32 1, i32 100, i32 5, i32 10, i32 16, i32 13}
-; CHECK: [[PROF2]] = !{!"unknown", !"lower-mem-intrinsics"}
-; CHECK: [[PROF3]] = !{!"branch_weights", i32 1048575, i32 1}
-; CHECK: [[PROF4]] = !{!"branch_weights", i32 2, i32 1}
 ;.
