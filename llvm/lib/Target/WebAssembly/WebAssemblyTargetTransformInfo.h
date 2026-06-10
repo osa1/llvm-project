@@ -77,6 +77,10 @@ public:
   TTI::MemCmpExpansionOptions
   enableMemCmpExpansion(bool OptSize, bool IsZeroCmp) const override;
 
+  bool hasMemIntrinsicInstructions() const override {
+    return ST->hasBulkMemoryOpt();
+  }
+
   InstructionCost getMemoryOpCost(
       unsigned Opcode, Type *Src, Align Alignment, unsigned AddressSpace,
       TTI::TargetCostKind CostKind,

@@ -540,6 +540,10 @@ public:
   TTI::MemCmpExpansionOptions
   enableMemCmpExpansion(bool OptSize, bool IsZeroCmp) const override;
 
+  bool hasMemIntrinsicInstructions() const override {
+    return ST->hasVendorXqcilsm();
+  }
+
   bool enableSelectOptimize() const override {
     return ST->enableSelectOptimize();
   }

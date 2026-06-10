@@ -139,6 +139,10 @@ public:
   getIntrinsicInstrCost(const IntrinsicCostAttributes &ICA,
                         TTI::TargetCostKind CostKind) const override;
 
+  bool hasMemIntrinsicInstructions() const override {
+    return ST->hasMOPS();
+  }
+
   std::optional<Instruction *>
   instCombineIntrinsic(InstCombiner &IC, IntrinsicInst &II) const override;
 

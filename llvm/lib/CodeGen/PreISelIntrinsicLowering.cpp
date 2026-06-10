@@ -346,15 +346,15 @@ bool PreISelIntrinsicLowering::expandMemIntrinsicUses(
       break;
     }
     case Intrinsic::memcpy_inline: {
-      // Only expand llvm.memcpy.inline with non-constant length in this
-      // codepath, leaving the current SelectionDAG expansion for constant
-      // length memcpy intrinsics undisturbed.
+      // TODO: Document when we expand here.
       auto *Memcpy = cast<MemCpyInst>(Inst);
-      if (isa<ConstantInt>(Memcpy->getLength()))
-        break;
-
       Function *ParentFunc = Memcpy->getFunction();
       const TargetTransformInfo &TTI = LookupTTI(*ParentFunc);
+      if (isa<ConstantInt>(Memcpy->getLength()) &&
+          (TTI.hasMemIntrinsicInstructions() ||
+           !shouldExpandMemIntrinsicWithSize(Memcpy->getLength(), TTI)))
+        break;
+
       expandMemCpyAsLoop(Memcpy, TTI);
       Changed = true;
       Memcpy->eraseFromParent();
@@ -394,15 +394,15 @@ bool PreISelIntrinsicLowering::expandMemIntrinsicUses(
       break;
     }
     case Intrinsic::memset_inline: {
-      // Only expand llvm.memset.inline with non-constant length in this
-      // codepath, leaving the current SelectionDAG expansion for constant
-      // length memset intrinsics undisturbed.
+      // TODO: Document when we expand here.
       auto *Memset = cast<MemSetInst>(Inst);
-      if (isa<ConstantInt>(Memset->getLength()))
-        break;
-
       Function *ParentFunc = Memset->getFunction();
       const TargetTransformInfo &TTI = LookupTTI(*ParentFunc);
+      if (isa<ConstantInt>(Memset->getLength()) &&
+          (TTI.hasMemIntrinsicInstructions() ||
+           !shouldExpandMemIntrinsicWithSize(Memset->getLength(), TTI)))
+        break;
+
       expandMemSetAsLoop(Memset, TTI);
       Changed = true;
       Memset->eraseFromParent();

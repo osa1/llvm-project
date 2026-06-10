@@ -456,6 +456,13 @@ public:
   /// profitable to inline the call.
   LLVM_ABI uint64_t getMaxMemIntrinsicInlineSizeThreshold() const;
 
+  /// Returns whether the inline memory intrinsics (memcpy, memmove, memset) can
+  /// be lowered to inline instructions even with large sizes.
+  ///
+  /// When false, `pre-isel-intrinsic-lowering` will lower some of the
+  /// intrinsics into inline loops.
+  LLVM_ABI bool hasMemIntrinsicInstructions() const;
+
   /// \return The estimated number of case clusters when lowering \p 'SI'.
   /// \p JTSize Set a jump table size only when \p SI is suitable for a jump
   /// table.

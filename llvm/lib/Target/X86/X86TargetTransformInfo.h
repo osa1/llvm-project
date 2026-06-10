@@ -320,6 +320,8 @@ public:
     return ST->getMaxInlineSizeThreshold();
   }
 
+  bool hasMemIntrinsicInstructions() const override { return true; }
+
   TTI::MemCmpExpansionOptions
   enableMemCmpExpansion(bool OptSize, bool IsZeroCmp) const override;
   bool preferAlternateOpcodeVectorization() const override { return false; }

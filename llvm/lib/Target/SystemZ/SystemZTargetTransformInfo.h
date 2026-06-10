@@ -65,6 +65,8 @@ public:
   bool isLSRCostLess(const TargetTransformInfo::LSRCost &C1,
                      const TargetTransformInfo::LSRCost &C2) const override;
 
+  bool hasMemIntrinsicInstructions() const override { return true; }
+
   /// @}
 
   /// \name Vector TTI Implementations
