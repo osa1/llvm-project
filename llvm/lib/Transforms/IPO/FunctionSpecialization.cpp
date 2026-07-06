@@ -213,6 +213,28 @@ Cost InstCostVisitor::getLatencySavingsForKnownConstants() {
     TotalLatency += Latency;
   }
 
+  // Credit the latency of code that becomes unreachable once a constant feeds a
+  // branch/switch. Such blocks are collected in DeadBlocks by the codesize
+  // estimation (estimateBasicBlocks) but are not present in KnownConstants, so
+  // the loop above misses them. Because a specialization argument is
+  // loop-invariant by construction, a folded branch inside a loop removes work
+  // on every iteration; weighting the dead blocks by their block frequency lets
+  // that (potentially large) per-iteration saving be seen by the profitability
+  // check, while cold dead code (Weight == 0) contributes nothing.
+  for (BasicBlock *BB : DeadBlocks) {
+    uint64_t Weight = BFI.getBlockFreq(BB).getFrequency() /
+                      BFI.getEntryFreq().getFrequency();
+    if (!Weight)
+      continue;
+    for (Instruction &I : *BB) {
+      // Instructions already accounted for as known constants above.
+      if (KnownConstants.contains(&I))
+        continue;
+      TotalLatency +=
+          Weight * TTI.getInstructionCost(&I, TargetTransformInfo::TCK_Latency);
+    }
+  }
+
   return TotalLatency;
 }
 
