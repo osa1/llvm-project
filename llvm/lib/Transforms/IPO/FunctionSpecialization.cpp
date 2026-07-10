@@ -31,7 +31,7 @@ STATISTIC(NumSpecsCreated, "Number of specializations created");
 namespace llvm {
 
 static cl::opt<bool> ForceSpecialization(
-    "force-specialization", cl::init(false), cl::Hidden,
+    "force-specialization", cl::init(true), cl::Hidden,
     cl::desc(
         "Force function specialization for every call site with a constant "
         "argument"));
