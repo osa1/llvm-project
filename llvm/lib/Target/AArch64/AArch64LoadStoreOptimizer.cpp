@@ -67,6 +67,9 @@ STATISTIC(NumConstOffsetFolded,
           "Number of const offset of index address folded");
 STATISTIC(NumUMOVFoldedToFPRStore,
           "Number of UMOV + GPR stores folded to FPR stores");
+STATISTIC(NumPairsEnabledByNewBase,
+          "Number of load/store pairs enabled by materializing a new base "
+          "register");
 
 DEBUG_COUNTER(RegRenamingCounter, DEBUG_TYPE "-reg-renaming",
               "Controls which pairs are considered for renaming");
@@ -216,6 +219,12 @@ struct AArch64LoadStoreOpt {
 
   // Find and pair ldr/str instructions.
   bool tryToPairLdStInst(MachineBasicBlock::iterator &MBBI);
+
+  // When a store's offset is too large for STPXi's 7-bit signed scaled
+  // immediate, scan for a run of compatible same-base stores, materialize a
+  // new base register via ADDXri, and rewrite the stores to use it. The
+  // existing in-range pair logic then forms STPs on subsequent visits.
+  bool tryRewriteAndPairWithNewBase(MachineBasicBlock::iterator MBBI);
 
   // Find and promote load instructions which read directly from store.
   bool tryToPromoteLoadFromStore(MachineBasicBlock::iterator &MBBI);
@@ -2842,6 +2851,179 @@ bool AArch64LoadStoreOpt::tryToMergeZeroStInst(
   return false;
 }
 
+// When a store's offset exceeds STPXi's 7-bit signed scaled range, scan for a
+// run of same-base stores whose offsets fit a single 7-bit window, materialize
+// a new base register with ADDXri at the smallest offset in the run, and
+// rewrite each store against it. The existing in-range pair logic then forms
+// STPs on subsequent visits. Step 1: only handles STRXui with $sp as base.
+bool AArch64LoadStoreOpt::tryRewriteAndPairWithNewBase(
+    MachineBasicBlock::iterator MBBI) {
+  MachineInstr &FirstMI = *MBBI;
+  MachineBasicBlock &MBB = *FirstMI.getParent();
+  MachineFunction &MF = *MBB.getParent();
+
+  if (FirstMI.getOpcode() != AArch64::STRXui)
+    return false;
+
+  const MachineOperand &BaseMO = AArch64InstrInfo::getLdStBaseOp(FirstMI);
+  if (!BaseMO.isReg())
+    return false;
+  Register BaseReg = BaseMO.getReg();
+  if (BaseReg == AArch64::XZR)
+    return false;
+
+  // Under stack tagging (MTE), simple sp+imm stores are not tag-checked, but
+  // accesses through a derived pointer like `add xN, sp, #imm` would be
+  // tag-checked. Materializing a base register would change tag-check
+  // semantics for sp-based stores, so bail. Same reason isMergeableLdStUpdate
+  // refuses pre/post-index forms when stack tagging is enabled.
+  const AArch64FunctionInfo &AFI = *MF.getInfo<AArch64FunctionInfo>();
+  if (AFI.isMTETagged() && BaseReg == AArch64::SP)
+    return false;
+
+  int FirstOff = AArch64InstrInfo::getLdStOffsetOp(FirstMI).getImm();
+  if (FirstOff <= 63)
+    return false;
+
+  SmallVector<MachineBasicBlock::iterator, 8> Cands;
+  Cands.push_back(MBBI);
+  int MinOff = FirstOff, MaxOff = FirstOff;
+
+  MachineBasicBlock::iterator E = MBB.end();
+  unsigned Count = 0;
+  for (auto It = std::next(MBBI); It != E && Count < LdStLimit; ++It) {
+    MachineInstr &MI = *It;
+    if (MI.isTransient())
+      continue;
+    ++Count;
+
+    bool Matched = false;
+    if (MI.getOpcode() == AArch64::STRXui) {
+      const MachineOperand &Base = AArch64InstrInfo::getLdStBaseOp(MI);
+      if (Base.isReg() && Base.getReg() == BaseReg) {
+        int Off = AArch64InstrInfo::getLdStOffsetOp(MI).getImm();
+        int NewMin = std::min(MinOff, Off);
+        int NewMax = std::max(MaxOff, Off);
+        if (NewMax - NewMin <= 63) {
+          Cands.push_back(It);
+          MinOff = NewMin;
+          MaxOff = NewMax;
+          Matched = true;
+        }
+      }
+    }
+    if (Matched)
+      continue;
+
+    if (MI.modifiesRegister(BaseReg, TRI))
+      break;
+    if (MI.mayLoadOrStore())
+      break;
+  }
+
+  if (Cands.size() < 4)
+    return false;
+
+  // Profitability is determined by how many pairs would actually form, not how
+  // many same-base stores we collected. STPXi pairs require offsets differing
+  // by exactly 1 in the scaled form. They also require both stores to write
+  // the same source value: if the source register is redefined between the
+  // two stores, the existing pair logic will fail to combine them, leaving
+  // the materialized base register useless. Need ≥2 such pairs to save at
+  // least one instruction net of the ADDXri.
+  unsigned PairCount = 0;
+  for (unsigned I = 0; I + 1 < Cands.size();) {
+    auto C1 = Cands[I];
+    auto C2 = Cands[I + 1];
+    int Off1 = AArch64InstrInfo::getLdStOffsetOp(*C1).getImm();
+    int Off2 = AArch64InstrInfo::getLdStOffsetOp(*C2).getImm();
+
+    if (std::abs(Off2 - Off1) != 1) {
+      ++I;
+      continue;
+    }
+
+    Register Src1 = getLdStRegOp(*C1).getReg();
+    Register Src2 = getLdStRegOp(*C2).getReg();
+    if (Src1 != Src2) {
+      ++I;
+      continue;
+    }
+
+    bool SourceModified = false;
+    for (auto It = std::next(C1); It != C2; ++It) {
+      if (It->modifiesRegister(Src1, TRI)) {
+        SourceModified = true;
+        break;
+      }
+    }
+    if (SourceModified) {
+      ++I;
+      continue;
+    }
+
+    ++PairCount;
+    I += 2;
+  }
+  if (PairCount < 2)
+    return false;
+
+  LiveRegUnits LiveAtFirst(*TRI);
+  LiveAtFirst.addLiveOuts(MBB);
+  for (auto It = MBB.end(); It != Cands.front();) {
+    --It;
+    if (!It->isDebugInstr())
+      LiveAtFirst.stepBackward(*It);
+  }
+
+  LiveRegUnits TouchedInRun(*TRI);
+  for (auto It = Cands.front(); It != std::next(Cands.back()); ++It)
+    TouchedInRun.accumulate(*It);
+
+  const MachineRegisterInfo &MRI = MF.getRegInfo();
+  Register NewReg;
+  for (MCPhysReg R : AArch64::GPR64commonRegClass) {
+    if (R == BaseReg)
+      continue;
+    if (MRI.isReserved(R))
+      continue;
+    if (TRI->isCalleeSavedPhysReg(R, MF))
+      continue;
+    if (LiveAtFirst.available(R) && TouchedInRun.available(R)) {
+      NewReg = R;
+      break;
+    }
+  }
+  if (!NewReg)
+    return false;
+
+  int ByteOff = MinOff * 8;
+  if (ByteOff < 0 || ByteOff > 4095)
+    return false;
+
+  DebugLoc DL = FirstMI.getDebugLoc();
+  BuildMI(MBB, MBBI, DL, TII->get(AArch64::ADDXri), NewReg)
+      .addReg(BaseReg)
+      .addImm(ByteOff)
+      .addImm(0);
+
+  for (auto C : Cands) {
+    MachineOperand &Base = C->getOperand(1);
+    MachineOperand &Off = C->getOperand(2);
+    Base.setReg(NewReg);
+    Off.setImm(Off.getImm() - MinOff);
+  }
+  Cands.back()->getOperand(1).setIsKill(true);
+
+  // Record the pairs this rewrite is expected to enable. The STPs themselves
+  // are formed by the in-range pair logic on subsequent visits (bumping
+  // NumPairCreated); this tracks how many of those pairs only became possible
+  // because we materialized a new base register here.
+  NumPairsEnabledByNewBase += PairCount;
+
+  return true;
+}
+
 // Find loads and stores that can be merged into a single load or store pair
 // instruction.
 bool AArch64LoadStoreOpt::tryToPairLdStInst(MachineBasicBlock::iterator &MBBI) {
@@ -2868,8 +3050,17 @@ bool AArch64LoadStoreOpt::tryToPairLdStInst(MachineBasicBlock::iterator &MBBI) {
   // Allow one more for offset.
   if (Offset > 0)
     Offset -= OffsetStride;
-  if (!inBoundsForPair(IsUnscaled, Offset, OffsetStride))
-    return false;
+  if (!inBoundsForPair(IsUnscaled, Offset, OffsetStride)) {
+    if (!tryRewriteAndPairWithNewBase(MBBI))
+      return false;
+    // The rewrite changed *MBBI's offset; re-read so the rest of this function
+    // (which forms the first pair) sees the in-range value.
+    Offset = AArch64InstrInfo::getLdStOffsetOp(MI).getImm();
+    if (Offset > 0)
+      Offset -= OffsetStride;
+    assert(inBoundsForPair(IsUnscaled, Offset, OffsetStride) &&
+           "rewrite should have brought offset in range");
+  }
 
   // Look ahead up to LdStLimit instructions for a pairable instruction.
   LdStPairFlags Flags;

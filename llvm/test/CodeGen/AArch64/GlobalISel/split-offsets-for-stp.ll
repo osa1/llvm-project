@@ -302,10 +302,9 @@ define void @offset_illegal_for_add_imm(ptr %p) {
 define void @offset_legal_for_add_imm_4_stores(ptr %p) {
 ; CHECK-NO-SPLIT-LABEL: offset_legal_for_add_imm_4_stores:
 ; CHECK-NO-SPLIT:       ; %bb.0:
-; CHECK-NO-SPLIT-NEXT:    str xzr, [x0, #3200]
-; CHECK-NO-SPLIT-NEXT:    str xzr, [x0, #3208]
-; CHECK-NO-SPLIT-NEXT:    str xzr, [x0, #3216]
-; CHECK-NO-SPLIT-NEXT:    str xzr, [x0, #3224]
+; CHECK-NO-SPLIT-NEXT:    add x1, x0, #3200
+; CHECK-NO-SPLIT-NEXT:    stp xzr, xzr, [x1]
+; CHECK-NO-SPLIT-NEXT:    stp xzr, xzr, [x1, #16]
 ; CHECK-NO-SPLIT-NEXT:    ret
 ;
 ; CHECK-SPLIT-LABEL: offset_legal_for_add_imm_4_stores:

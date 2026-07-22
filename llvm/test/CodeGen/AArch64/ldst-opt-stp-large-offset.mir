@@ -1,0 +1,231 @@
+# RUN: llc -mtriple=arm64-apple-macosx -run-pass=aarch64-ldst-opt -verify-machineinstrs -o - %s | FileCheck %s
+
+# Test generating `stp`s for multiple `str`s when the immediates don't fit into
+# the `stp`s 7-bit immediate slot.
+
+--- |
+  define void @stores_in_range() { ret void }
+  define void @six_stores_large_sp_offset() { ret void }
+  define void @four_stores_large_sp_offset() { ret void }
+  define void @two_stores_large_sp_offset() { ret void }
+  define void @six_stores_large_offset_x0(ptr %p) { ret void }
+  define void @six_stores_large_sp_offset_mte() sanitize_memtag { ret void }
+  define void @stores_non_adjacent_no_pair(ptr %p) { ret void }
+  define void @stores_with_source_redef_between() { ret void }
+...
+
+---
+# The basic case that's handled today: `str`s are converted to `stp`s when the
+# offsets are in range.
+name: stores_in_range
+tracksRegLiveness: true
+body: |
+  bb.0:
+    liveins: $sp
+
+    ; CHECK-LABEL: name: stores_in_range
+    ; CHECK-NOT: ADDXri $sp,
+    ; CHECK-DAG: STPXi $xzr, $xzr, $sp, 0
+    ; CHECK-DAG: STPXi $xzr, $xzr, $sp, 2
+    ; CHECK:     RET_ReallyLR
+
+    STRXui $xzr, $sp, 0 :: (store (s64))
+    STRXui $xzr, $sp, 1 :: (store (s64))
+    STRXui $xzr, $sp, 2 :: (store (s64))
+    STRXui $xzr, $sp, 3 :: (store (s64))
+    RET_ReallyLR
+...
+
+---
+name: six_stores_large_sp_offset
+tracksRegLiveness: true
+body: |
+  bb.0:
+    liveins: $sp
+
+    ; CHECK-LABEL: name: six_stores_large_sp_offset
+    ; CHECK:     $[[BASE:x[0-9]+]] = ADDXri $sp, 904, 0
+    ; CHECK-DAG: STPXi $xzr, $xzr, $[[BASE]], 0
+    ; CHECK-DAG: STPXi $xzr, $xzr, $[[BASE]], 2
+    ; CHECK-DAG: STPXi $xzr, $xzr, $[[BASE]], 4
+    ; CHECK:     RET_ReallyLR
+
+    STRXui $xzr, $sp, 116 :: (store (s64))
+    STRXui $xzr, $sp, 115 :: (store (s64))
+    STRXui $xzr, $sp, 114 :: (store (s64))
+    STRXui $xzr, $sp, 113 :: (store (s64))
+    STRXui $xzr, $sp, 118 :: (store (s64))
+    STRXui $xzr, $sp, 117 :: (store (s64))
+    RET_ReallyLR
+...
+
+---
+name: four_stores_large_sp_offset
+tracksRegLiveness: true
+body: |
+  bb.0:
+    liveins: $sp
+
+    ; CHECK-LABEL: name: four_stores_large_sp_offset
+    ; CHECK:     $[[BASE:x[0-9]+]] = ADDXri $sp, 904, 0
+    ; CHECK-DAG: STPXi $xzr, $xzr, $[[BASE]], 0
+    ; CHECK-DAG: STPXi $xzr, $xzr, $[[BASE]], 2
+    ; CHECK:     RET_ReallyLR
+
+    STRXui $xzr, $sp, 113 :: (store (s64))
+    STRXui $xzr, $sp, 114 :: (store (s64))
+    STRXui $xzr, $sp, 115 :: (store (s64))
+    STRXui $xzr, $sp, 116 :: (store (s64))
+    RET_ReallyLR
+...
+
+---
+# With two stores we leave the original stores instead of converting them to
+# different two instructions (`add` and `stp`).
+name: two_stores_large_sp_offset
+tracksRegLiveness: true
+body: |
+  bb.0:
+    liveins: $sp
+
+    ; CHECK-LABEL: name: two_stores_large_sp_offset
+    ; CHECK-NOT: ADDXri $sp,
+    ; CHECK-NOT: STPXi
+    ; CHECK:     STRXui $xzr, $sp, 113
+    ; CHECK:     STRXui $xzr, $sp, 114
+    ; CHECK:     RET_ReallyLR
+
+    STRXui $xzr, $sp, 113 :: (store (s64))
+    STRXui $xzr, $sp, 114 :: (store (s64))
+    RET_ReallyLR
+...
+
+---
+# Try a different base register other than `sp`.
+name: six_stores_large_offset_x0
+tracksRegLiveness: true
+body: |
+  bb.0:
+    liveins: $x0
+
+    ; CHECK-LABEL: name: six_stores_large_offset_x0
+    ; CHECK:     $[[BASE:x[0-9]+]] = ADDXri $x0, 904, 0
+    ; CHECK-DAG: STPXi $xzr, $xzr, $[[BASE]], 0
+    ; CHECK-DAG: STPXi $xzr, $xzr, $[[BASE]], 2
+    ; CHECK-DAG: STPXi $xzr, $xzr, $[[BASE]], 4
+    ; CHECK:     RET_ReallyLR
+
+    STRXui $xzr, $x0, 113 :: (store (s64))
+    STRXui $xzr, $x0, 114 :: (store (s64))
+    STRXui $xzr, $x0, 115 :: (store (s64))
+    STRXui $xzr, $x0, 116 :: (store (s64))
+    STRXui $xzr, $x0, 117 :: (store (s64))
+    STRXui $xzr, $x0, 118 :: (store (s64))
+    RET_ReallyLR
+...
+
+---
+# Check MTE interaction.
+name: six_stores_large_sp_offset_mte
+tracksRegLiveness: true
+body: |
+  bb.0:
+    liveins: $sp
+
+    ; CHECK-LABEL: name: six_stores_large_sp_offset_mte
+    ; CHECK-NOT: ADDXri $sp,
+    ; CHECK-NOT: STPXi
+    ; CHECK:     STRXui $xzr, $sp, 113
+    ; CHECK:     STRXui $xzr, $sp, 114
+    ; CHECK:     STRXui $xzr, $sp, 115
+    ; CHECK:     STRXui $xzr, $sp, 116
+    ; CHECK:     STRXui $xzr, $sp, 117
+    ; CHECK:     STRXui $xzr, $sp, 118
+    ; CHECK:     RET_ReallyLR
+
+    STRXui $xzr, $sp, 113 :: (store (s64))
+    STRXui $xzr, $sp, 114 :: (store (s64))
+    STRXui $xzr, $sp, 115 :: (store (s64))
+    STRXui $xzr, $sp, 116 :: (store (s64))
+    STRXui $xzr, $sp, 117 :: (store (s64))
+    STRXui $xzr, $sp, 118 :: (store (s64))
+    RET_ReallyLR
+...
+
+---
+# Stores share a base and fit a 7-bit window after rewriting, but their offsets
+# are too far apart to pair (stride 8 scaled = 64 bytes apart, not 1 scaled =
+# 8 bytes). Materializing a base would buy nothing — 4 STRs would become 1 ADD
+# + 4 STRs. Should NOT fire.
+name: stores_non_adjacent_no_pair
+tracksRegLiveness: true
+body: |
+  bb.0:
+    liveins: $x0, $x8
+
+    ; CHECK-LABEL: name: stores_non_adjacent_no_pair
+    ; CHECK-NOT: ADDXri
+    ; CHECK-NOT: STPXi
+    ; CHECK:     STRXui $x8, $x0, 96
+    ; CHECK:     STRXui $x8, $x0, 104
+    ; CHECK:     STRXui $x8, $x0, 112
+    ; CHECK:     STRXui $x8, $x0, 120
+    ; CHECK:     RET_ReallyLR
+
+    STRXui $x8, $x0, 96 :: (store (s64))
+    STRXui $x8, $x0, 104 :: (store (s64))
+    STRXui $x8, $x0, 112 :: (store (s64))
+    STRXui $x8, $x0, 120 :: (store (s64))
+    RET_ReallyLR
+...
+
+---
+# Stores have adjacent offsets (95..99) but each is preceded by a chain of
+# instructions that redefine the source register $x13, mirroring a real
+# regression in spill code generated for unrolled compare-and-select loops.
+# Pair formation fails (cannot rename the source across redefinitions in this
+# context), so materializing a base would only add an ADDXri without enabling
+# any STPs. Should NOT fire.
+name: stores_with_source_redef_between
+tracksRegLiveness: true
+body: |
+  bb.0:
+    liveins: $x0, $x5, $x9, $x11, $w10, $w12, $w14, $w15
+
+    ; CHECK-LABEL: name: stores_with_source_redef_between
+    ; CHECK-NOT: ADDXri
+    ; CHECK-NOT: STPXi
+    ; CHECK:     STRXui killed renamable $x13, $sp, 95
+    ; CHECK:     STRXui killed renamable $x13, $sp, 96
+    ; CHECK:     STRXui killed renamable $x13, $sp, 97
+    ; CHECK:     STRXui killed renamable $x13, $sp, 98
+    ; CHECK:     STRXui killed renamable $x13, $sp, 99
+    ; CHECK:     RET_ReallyLR
+
+    $wzr = SUBSWrs renamable $w15, renamable $w12, 0, implicit-def $nzcv
+    renamable $w13 = CSELWr renamable $w15, renamable $w12, 11, implicit $nzcv, implicit-def $x13
+    $xzr = SUBSXrs renamable $x11, renamable $x13, 0, implicit-def $nzcv
+    renamable $x13 = CSINCXr killed renamable $x13, renamable $x5, 9, implicit $nzcv
+    STRXui killed renamable $x13, $sp, 95 :: (store (s64))
+    $wzr = SUBSWrs renamable $w14, renamable $w10, 0, implicit-def $nzcv
+    renamable $w13 = CSELWr renamable $w14, renamable $w10, 11, implicit $nzcv, implicit-def $x13
+    $xzr = SUBSXrs renamable $x9, renamable $x13, 0, implicit-def $nzcv
+    renamable $x13 = CSINCXr killed renamable $x13, renamable $x0, 9, implicit $nzcv
+    STRXui killed renamable $x13, $sp, 96 :: (store (s64))
+    $wzr = SUBSWrs renamable $w14, renamable $w10, 0, implicit-def $nzcv
+    renamable $w13 = CSELWr renamable $w14, renamable $w10, 11, implicit $nzcv, implicit-def $x13
+    $xzr = SUBSXrs renamable $x9, renamable $x13, 0, implicit-def $nzcv
+    renamable $x13 = CSINCXr killed renamable $x13, renamable $x0, 9, implicit $nzcv
+    STRXui killed renamable $x13, $sp, 97 :: (store (s64))
+    $wzr = SUBSWrs renamable $w14, renamable $w10, 0, implicit-def $nzcv
+    renamable $w13 = CSELWr renamable $w14, renamable $w10, 11, implicit $nzcv, implicit-def $x13
+    $xzr = SUBSXrs renamable $x9, renamable $x13, 0, implicit-def $nzcv
+    renamable $x13 = CSINCXr killed renamable $x13, renamable $x0, 9, implicit $nzcv
+    STRXui killed renamable $x13, $sp, 98 :: (store (s64))
+    $wzr = SUBSWrs renamable $w15, renamable $w12, 0, implicit-def $nzcv
+    renamable $w13 = CSELWr renamable $w15, renamable $w12, 11, implicit $nzcv, implicit-def $x13
+    $xzr = SUBSXrs renamable $x11, renamable $x13, 0, implicit-def $nzcv
+    renamable $x13 = CSINCXr killed renamable $x13, renamable $x5, 9, implicit $nzcv
+    STRXui killed renamable $x13, $sp, 99 :: (store (s64))
+    RET_ReallyLR
+...
