@@ -38,8 +38,6 @@ entry:
 define void @store2(ptr %in, ptr %addr) {
 ; CHECK-LABEL: store2:
 ; CHECK:       // %bb.0: // %entry
-; CHECK-NEXT:    sub sp, sp, #64
-; CHECK-NEXT:    .cfi_def_cfa_offset 64
 ; CHECK-NEXT:    ldpsw x2, x3, [x0]
 ; CHECK-NEXT:    ldrsw x4, [x0, #16]
 ; CHECK-NEXT:    ldrsw x5, [x0, #64]
@@ -50,7 +48,6 @@ define void @store2(ptr %in, ptr %addr) {
 ; CHECK-NEXT:    //APP
 ; CHECK-NEXT:    st64b x2, [x1]
 ; CHECK-NEXT:    //NO_APP
-; CHECK-NEXT:    add sp, sp, #64
 ; CHECK-NEXT:    ret
 entry:
   %0 = load i32, ptr %in, align 4

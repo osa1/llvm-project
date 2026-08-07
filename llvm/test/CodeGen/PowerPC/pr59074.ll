@@ -23,8 +23,8 @@ define void @pr59074(ptr %0) {
 ;
 ; LE32-LABEL: pr59074:
 ; LE32:       # %bb.0: # %entry
-; LE32-NEXT:    stwu 1, -80(1)
-; LE32-NEXT:    .cfi_def_cfa_offset 80
+; LE32-NEXT:    stwu 1, -48(1)
+; LE32-NEXT:    .cfi_def_cfa_offset 48
 ; LE32-NEXT:    lwz 4, 0(3)
 ; LE32-NEXT:    xxlxor 0, 0, 0
 ; LE32-NEXT:    addi 5, 1, 20
@@ -61,7 +61,7 @@ define void @pr59074(ptr %0) {
 ; LE32-NEXT:    stw 6, 8(3)
 ; LE32-NEXT:    stw 5, 0(3)
 ; LE32-NEXT:    stw 7, 4(3)
-; LE32-NEXT:    addi 1, 1, 80
+; LE32-NEXT:    addi 1, 1, 48
 ; LE32-NEXT:    blr
 ;
 ; BE64-LABEL: pr59074:
@@ -83,16 +83,16 @@ define void @pr59074(ptr %0) {
 ; BE32:       # %bb.0: # %entry
 ; BE32-NEXT:    lwz 4, 12(3)
 ; BE32-NEXT:    xxlxor 0, 0, 0
-; BE32-NEXT:    addi 5, 1, -64
+; BE32-NEXT:    addi 5, 1, -32
 ; BE32-NEXT:    li 6, 12
 ; BE32-NEXT:    li 7, 0
-; BE32-NEXT:    addi 8, 1, -48
+; BE32-NEXT:    addi 8, 1, -16
 ; BE32-NEXT:    stxvw4x 0, 0, 5
-; BE32-NEXT:    stw 6, -36(1)
+; BE32-NEXT:    stw 6, -4(1)
 ; BE32-NEXT:    addi 4, 4, -12
-; BE32-NEXT:    stw 7, -40(1)
-; BE32-NEXT:    stw 7, -44(1)
-; BE32-NEXT:    stw 7, -48(1)
+; BE32-NEXT:    stw 7, -8(1)
+; BE32-NEXT:    stw 7, -12(1)
+; BE32-NEXT:    stw 7, -16(1)
 ; BE32-NEXT:    rlwinm 9, 4, 29, 28, 29
 ; BE32-NEXT:    clrlwi 4, 4, 27
 ; BE32-NEXT:    sub 5, 8, 9

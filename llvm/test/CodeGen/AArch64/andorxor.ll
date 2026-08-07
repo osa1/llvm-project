@@ -284,8 +284,6 @@ entry:
 define void @and_v3i8(ptr %p1, ptr %p2) {
 ; CHECK-SD-LABEL: and_v3i8:
 ; CHECK-SD:       // %bb.0: // %entry
-; CHECK-SD-NEXT:    sub sp, sp, #16
-; CHECK-SD-NEXT:    .cfi_def_cfa_offset 16
 ; CHECK-SD-NEXT:    ldr s0, [x0]
 ; CHECK-SD-NEXT:    ldr s1, [x1]
 ; CHECK-SD-NEXT:    zip1 v0.8b, v0.8b, v0.8b
@@ -296,7 +294,6 @@ define void @and_v3i8(ptr %p1, ptr %p2) {
 ; CHECK-SD-NEXT:    ushll v1.4s, v1.4h, #0
 ; CHECK-SD-NEXT:    stur b0, [x0, #2]
 ; CHECK-SD-NEXT:    str h1, [x0]
-; CHECK-SD-NEXT:    add sp, sp, #16
 ; CHECK-SD-NEXT:    ret
 ;
 ; CHECK-GI-LABEL: and_v3i8:
@@ -335,8 +332,6 @@ entry:
 define void @or_v3i8(ptr %p1, ptr %p2) {
 ; CHECK-SD-LABEL: or_v3i8:
 ; CHECK-SD:       // %bb.0: // %entry
-; CHECK-SD-NEXT:    sub sp, sp, #16
-; CHECK-SD-NEXT:    .cfi_def_cfa_offset 16
 ; CHECK-SD-NEXT:    ldr s0, [x0]
 ; CHECK-SD-NEXT:    ldr s1, [x1]
 ; CHECK-SD-NEXT:    zip1 v0.8b, v0.8b, v0.8b
@@ -347,7 +342,6 @@ define void @or_v3i8(ptr %p1, ptr %p2) {
 ; CHECK-SD-NEXT:    ushll v1.4s, v1.4h, #0
 ; CHECK-SD-NEXT:    stur b0, [x0, #2]
 ; CHECK-SD-NEXT:    str h1, [x0]
-; CHECK-SD-NEXT:    add sp, sp, #16
 ; CHECK-SD-NEXT:    ret
 ;
 ; CHECK-GI-LABEL: or_v3i8:
@@ -386,8 +380,6 @@ entry:
 define void @xor_v3i8(ptr %p1, ptr %p2) {
 ; CHECK-SD-LABEL: xor_v3i8:
 ; CHECK-SD:       // %bb.0: // %entry
-; CHECK-SD-NEXT:    sub sp, sp, #16
-; CHECK-SD-NEXT:    .cfi_def_cfa_offset 16
 ; CHECK-SD-NEXT:    ldr s0, [x0]
 ; CHECK-SD-NEXT:    ldr s1, [x1]
 ; CHECK-SD-NEXT:    zip1 v0.8b, v0.8b, v0.8b
@@ -398,7 +390,6 @@ define void @xor_v3i8(ptr %p1, ptr %p2) {
 ; CHECK-SD-NEXT:    ushll v1.4s, v1.4h, #0
 ; CHECK-SD-NEXT:    stur b0, [x0, #2]
 ; CHECK-SD-NEXT:    str h1, [x0]
-; CHECK-SD-NEXT:    add sp, sp, #16
 ; CHECK-SD-NEXT:    ret
 ;
 ; CHECK-GI-LABEL: xor_v3i8:

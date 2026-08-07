@@ -300,10 +300,7 @@ define <1 x i64> @splat_v1i64(i64 %a) {
 ;
 ; NONEON-NOSVE-LABEL: splat_v1i64:
 ; NONEON-NOSVE:       // %bb.0:
-; NONEON-NOSVE-NEXT:    sub sp, sp, #16
-; NONEON-NOSVE-NEXT:    .cfi_def_cfa_offset 16
 ; NONEON-NOSVE-NEXT:    fmov d0, x0
-; NONEON-NOSVE-NEXT:    add sp, sp, #16
 ; NONEON-NOSVE-NEXT:    ret
   %insert = insertelement <1 x i64> poison, i64 %a, i64 0
   %splat = shufflevector <1 x i64> %insert, <1 x i64> poison, <1 x i32> zeroinitializer
@@ -529,9 +526,6 @@ define <1 x double> @splat_v1f64(double %a, <1 x double> %op2) {
 ;
 ; NONEON-NOSVE-LABEL: splat_v1f64:
 ; NONEON-NOSVE:       // %bb.0:
-; NONEON-NOSVE-NEXT:    sub sp, sp, #16
-; NONEON-NOSVE-NEXT:    .cfi_def_cfa_offset 16
-; NONEON-NOSVE-NEXT:    add sp, sp, #16
 ; NONEON-NOSVE-NEXT:    ret
   %insert = insertelement <1 x double> poison, double %a, i64 0
   %splat = shufflevector <1 x double> %insert, <1 x double> poison, <1 x i32> zeroinitializer

@@ -58,8 +58,6 @@ define i4 @inserted_poison_first_mask_element(<4 x i128> %0) {
 ;
 ; MSA-LABEL: inserted_poison_first_mask_element:
 ; MSA:       # %bb.0: # %start
-; MSA-NEXT:    daddiu $sp, $sp, -16
-; MSA-NEXT:    .cfi_def_cfa_offset 16
 ; MSA-NEXT:    or $1, $10, $11
 ; MSA-NEXT:    or $2, $8, $9
 ; MSA-NEXT:    or $3, $4, $5
@@ -101,9 +99,8 @@ define i4 @inserted_poison_first_mask_element(<4 x i128> %0) {
 ; MSA-NEXT:    subu $3, $4, $3
 ; MSA-NEXT:    or $2, $3, $2
 ; MSA-NEXT:    or $1, $2, $1
-; MSA-NEXT:    andi $2, $1, 15
 ; MSA-NEXT:    jr $ra
-; MSA-NEXT:    daddiu $sp, $sp, 16
+; MSA-NEXT:    andi $2, $1, 15
 start:
   %1 = icmp ne <4 x i128> %0, zeroinitializer
   %2 = bitcast <4 x i1> %1 to i4

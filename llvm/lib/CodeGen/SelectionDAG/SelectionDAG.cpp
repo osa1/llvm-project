@@ -2689,7 +2689,8 @@ SDValue SelectionDAG::CreateStackTemporary(TypeSize Bytes, Align Alignment) {
   // The stack id gives an indication of whether the object is scalable or
   // not, so it's safe to pass in the minimum size here.
   int FrameIdx = MFI.CreateStackObject(Bytes.getKnownMinValue(), Alignment,
-                                       false, nullptr, StackID);
+                                       /*IsSpillSlot=*/false, nullptr, StackID,
+                                       /*IsTemporary=*/true);
   return getFrameIndex(FrameIdx, TLI->getFrameIndexTy(getDataLayout()));
 }
 

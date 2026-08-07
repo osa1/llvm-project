@@ -108,15 +108,14 @@ define <vscale x 16 x i1> @pred_load_neg3(ptr %addr) #1 {
 ; CHECK-LABEL: pred_load_neg3:
 ; CHECK:       // %bb.0:
 ; CHECK-NEXT:    str x29, [sp, #-16]! // 8-byte Folded Spill
-; CHECK-NEXT:    addvl sp, sp, #-2
-; CHECK-NEXT:    .cfi_escape 0x0f, 0x08, 0x8f, 0x10, 0x92, 0x2e, 0x00, 0x40, 0x1e, 0x22 // sp + 16 + 16 * VG
+; CHECK-NEXT:    addvl sp, sp, #-1
+; CHECK-NEXT:    .cfi_escape 0x0f, 0x08, 0x8f, 0x10, 0x92, 0x2e, 0x00, 0x38, 0x1e, 0x22 // sp + 16 + 8 * VG
 ; CHECK-NEXT:    .cfi_offset w29, -16
 ; CHECK-NEXT:    ptrue p0.d
-; CHECK-NEXT:    addvl x8, sp, #1
 ; CHECK-NEXT:    ld1b { z0.d }, p0/z, [x0]
-; CHECK-NEXT:    st1b { z0.d }, p0, [x8, #7, mul vl]
-; CHECK-NEXT:    ldr p0, [sp, #15, mul vl]
-; CHECK-NEXT:    addvl sp, sp, #2
+; CHECK-NEXT:    st1b { z0.d }, p0, [sp, #7, mul vl]
+; CHECK-NEXT:    ldr p0, [sp, #7, mul vl]
+; CHECK-NEXT:    addvl sp, sp, #1
 ; CHECK-NEXT:    ldr x29, [sp], #16 // 8-byte Folded Reload
 ; CHECK-NEXT:    ret
   %load = load <4 x i8>, ptr %addr, align 4

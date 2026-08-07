@@ -23,12 +23,13 @@ define void @masked_store_v4i8(ptr %dst, <4 x i1> %mask) {
 ;
 ; NONEON-NOSVE-LABEL: masked_store_v4i8:
 ; NONEON-NOSVE:       // %bb.0:
-; NONEON-NOSVE-NEXT:    str d0, [sp, #-16]!
+; NONEON-NOSVE-NEXT:    sub sp, sp, #16
 ; NONEON-NOSVE-NEXT:    .cfi_def_cfa_offset 16
-; NONEON-NOSVE-NEXT:    ldrh w8, [sp, #2]
-; NONEON-NOSVE-NEXT:    ldrh w9, [sp, #4]
-; NONEON-NOSVE-NEXT:    ldrh w10, [sp, #6]
-; NONEON-NOSVE-NEXT:    ldrh w11, [sp]
+; NONEON-NOSVE-NEXT:    str d0, [sp, #8]
+; NONEON-NOSVE-NEXT:    ldrh w8, [sp, #10]
+; NONEON-NOSVE-NEXT:    ldrh w9, [sp, #12]
+; NONEON-NOSVE-NEXT:    ldrh w10, [sp, #14]
+; NONEON-NOSVE-NEXT:    ldrh w11, [sp, #8]
 ; NONEON-NOSVE-NEXT:    sbfx w8, w8, #0, #1
 ; NONEON-NOSVE-NEXT:    sbfx w9, w9, #0, #1
 ; NONEON-NOSVE-NEXT:    sbfx w10, w10, #0, #1
@@ -79,25 +80,26 @@ define void @masked_store_v8i8(ptr %dst, <8 x i1> %mask) {
 ;
 ; NONEON-NOSVE-LABEL: masked_store_v8i8:
 ; NONEON-NOSVE:       // %bb.0:
-; NONEON-NOSVE-NEXT:    str d0, [sp, #-16]!
+; NONEON-NOSVE-NEXT:    sub sp, sp, #16
 ; NONEON-NOSVE-NEXT:    .cfi_def_cfa_offset 16
-; NONEON-NOSVE-NEXT:    ldrb w8, [sp, #2]
-; NONEON-NOSVE-NEXT:    ldrb w9, [sp, #3]
-; NONEON-NOSVE-NEXT:    ldrb w10, [sp, #1]
-; NONEON-NOSVE-NEXT:    ldrb w12, [sp, #4]
-; NONEON-NOSVE-NEXT:    ldrb w13, [sp, #5]
-; NONEON-NOSVE-NEXT:    ldrb w14, [sp, #6]
+; NONEON-NOSVE-NEXT:    str d0, [sp, #8]
+; NONEON-NOSVE-NEXT:    ldrb w8, [sp, #10]
+; NONEON-NOSVE-NEXT:    ldrb w9, [sp, #11]
+; NONEON-NOSVE-NEXT:    ldrb w10, [sp, #9]
+; NONEON-NOSVE-NEXT:    ldrb w12, [sp, #12]
+; NONEON-NOSVE-NEXT:    ldrb w13, [sp, #13]
+; NONEON-NOSVE-NEXT:    ldrb w14, [sp, #14]
 ; NONEON-NOSVE-NEXT:    sbfx w8, w8, #0, #1
 ; NONEON-NOSVE-NEXT:    sbfx w9, w9, #0, #1
 ; NONEON-NOSVE-NEXT:    sbfx w10, w10, #0, #1
-; NONEON-NOSVE-NEXT:    ldrb w11, [sp]
+; NONEON-NOSVE-NEXT:    ldrb w11, [sp, #8]
 ; NONEON-NOSVE-NEXT:    sbfx w12, w12, #0, #1
 ; NONEON-NOSVE-NEXT:    sbfx w13, w13, #0, #1
 ; NONEON-NOSVE-NEXT:    and w8, w8, #0x4
 ; NONEON-NOSVE-NEXT:    and w9, w9, #0x8
 ; NONEON-NOSVE-NEXT:    sbfx w14, w14, #0, #1
 ; NONEON-NOSVE-NEXT:    orr w8, w8, w9
-; NONEON-NOSVE-NEXT:    ldrb w9, [sp, #7]
+; NONEON-NOSVE-NEXT:    ldrb w9, [sp, #15]
 ; NONEON-NOSVE-NEXT:    and w10, w10, #0x2
 ; NONEON-NOSVE-NEXT:    and w12, w12, #0x10
 ; NONEON-NOSVE-NEXT:    bfxil w10, w11, #0, #1
@@ -605,10 +607,11 @@ define void @masked_store_v2f16(ptr %dst, <2 x i1> %mask) {
 ;
 ; NONEON-NOSVE-LABEL: masked_store_v2f16:
 ; NONEON-NOSVE:       // %bb.0:
-; NONEON-NOSVE-NEXT:    str d0, [sp, #-16]!
+; NONEON-NOSVE-NEXT:    sub sp, sp, #16
 ; NONEON-NOSVE-NEXT:    .cfi_def_cfa_offset 16
-; NONEON-NOSVE-NEXT:    ldr w8, [sp, #4]
-; NONEON-NOSVE-NEXT:    ldrb w9, [sp]
+; NONEON-NOSVE-NEXT:    str d0, [sp, #8]
+; NONEON-NOSVE-NEXT:    ldr w8, [sp, #12]
+; NONEON-NOSVE-NEXT:    ldrb w9, [sp, #8]
 ; NONEON-NOSVE-NEXT:    sbfx w8, w8, #0, #1
 ; NONEON-NOSVE-NEXT:    and w8, w8, #0x2
 ; NONEON-NOSVE-NEXT:    bfxil w8, w9, #0, #1
@@ -645,12 +648,13 @@ define void @masked_store_v4f16(ptr %dst, <4 x i1> %mask) {
 ;
 ; NONEON-NOSVE-LABEL: masked_store_v4f16:
 ; NONEON-NOSVE:       // %bb.0:
-; NONEON-NOSVE-NEXT:    str d0, [sp, #-16]!
+; NONEON-NOSVE-NEXT:    sub sp, sp, #16
 ; NONEON-NOSVE-NEXT:    .cfi_def_cfa_offset 16
-; NONEON-NOSVE-NEXT:    ldrh w8, [sp, #2]
-; NONEON-NOSVE-NEXT:    ldrh w9, [sp, #4]
-; NONEON-NOSVE-NEXT:    ldrh w10, [sp, #6]
-; NONEON-NOSVE-NEXT:    ldrh w11, [sp]
+; NONEON-NOSVE-NEXT:    str d0, [sp, #8]
+; NONEON-NOSVE-NEXT:    ldrh w8, [sp, #10]
+; NONEON-NOSVE-NEXT:    ldrh w9, [sp, #12]
+; NONEON-NOSVE-NEXT:    ldrh w10, [sp, #14]
+; NONEON-NOSVE-NEXT:    ldrh w11, [sp, #8]
 ; NONEON-NOSVE-NEXT:    sbfx w8, w8, #0, #1
 ; NONEON-NOSVE-NEXT:    sbfx w9, w9, #0, #1
 ; NONEON-NOSVE-NEXT:    sbfx w10, w10, #0, #1
@@ -706,25 +710,26 @@ define void @masked_store_v8f16(ptr %dst, <8 x i1> %mask) {
 ;
 ; NONEON-NOSVE-LABEL: masked_store_v8f16:
 ; NONEON-NOSVE:       // %bb.0:
-; NONEON-NOSVE-NEXT:    str d0, [sp, #-16]!
+; NONEON-NOSVE-NEXT:    sub sp, sp, #16
 ; NONEON-NOSVE-NEXT:    .cfi_def_cfa_offset 16
-; NONEON-NOSVE-NEXT:    ldrb w8, [sp, #2]
-; NONEON-NOSVE-NEXT:    ldrb w9, [sp, #3]
-; NONEON-NOSVE-NEXT:    ldrb w10, [sp, #1]
-; NONEON-NOSVE-NEXT:    ldrb w12, [sp, #4]
-; NONEON-NOSVE-NEXT:    ldrb w13, [sp, #5]
-; NONEON-NOSVE-NEXT:    ldrb w14, [sp, #6]
+; NONEON-NOSVE-NEXT:    str d0, [sp, #8]
+; NONEON-NOSVE-NEXT:    ldrb w8, [sp, #10]
+; NONEON-NOSVE-NEXT:    ldrb w9, [sp, #11]
+; NONEON-NOSVE-NEXT:    ldrb w10, [sp, #9]
+; NONEON-NOSVE-NEXT:    ldrb w12, [sp, #12]
+; NONEON-NOSVE-NEXT:    ldrb w13, [sp, #13]
+; NONEON-NOSVE-NEXT:    ldrb w14, [sp, #14]
 ; NONEON-NOSVE-NEXT:    sbfx w8, w8, #0, #1
 ; NONEON-NOSVE-NEXT:    sbfx w9, w9, #0, #1
 ; NONEON-NOSVE-NEXT:    sbfx w10, w10, #0, #1
-; NONEON-NOSVE-NEXT:    ldrb w11, [sp]
+; NONEON-NOSVE-NEXT:    ldrb w11, [sp, #8]
 ; NONEON-NOSVE-NEXT:    sbfx w12, w12, #0, #1
 ; NONEON-NOSVE-NEXT:    sbfx w13, w13, #0, #1
 ; NONEON-NOSVE-NEXT:    and w8, w8, #0x4
 ; NONEON-NOSVE-NEXT:    and w9, w9, #0x8
 ; NONEON-NOSVE-NEXT:    sbfx w14, w14, #0, #1
 ; NONEON-NOSVE-NEXT:    orr w8, w8, w9
-; NONEON-NOSVE-NEXT:    ldrb w9, [sp, #7]
+; NONEON-NOSVE-NEXT:    ldrb w9, [sp, #15]
 ; NONEON-NOSVE-NEXT:    and w10, w10, #0x2
 ; NONEON-NOSVE-NEXT:    and w12, w12, #0x10
 ; NONEON-NOSVE-NEXT:    bfxil w10, w11, #0, #1
@@ -965,12 +970,13 @@ define void @masked_store_v4f32(ptr %dst, <4 x i1> %mask) {
 ;
 ; NONEON-NOSVE-LABEL: masked_store_v4f32:
 ; NONEON-NOSVE:       // %bb.0:
-; NONEON-NOSVE-NEXT:    str d0, [sp, #-16]!
+; NONEON-NOSVE-NEXT:    sub sp, sp, #16
 ; NONEON-NOSVE-NEXT:    .cfi_def_cfa_offset 16
-; NONEON-NOSVE-NEXT:    ldrh w8, [sp, #2]
-; NONEON-NOSVE-NEXT:    ldrh w9, [sp, #4]
-; NONEON-NOSVE-NEXT:    ldrh w10, [sp, #6]
-; NONEON-NOSVE-NEXT:    ldrh w11, [sp]
+; NONEON-NOSVE-NEXT:    str d0, [sp, #8]
+; NONEON-NOSVE-NEXT:    ldrh w8, [sp, #10]
+; NONEON-NOSVE-NEXT:    ldrh w9, [sp, #12]
+; NONEON-NOSVE-NEXT:    ldrh w10, [sp, #14]
+; NONEON-NOSVE-NEXT:    ldrh w11, [sp, #8]
 ; NONEON-NOSVE-NEXT:    sbfx w8, w8, #0, #1
 ; NONEON-NOSVE-NEXT:    sbfx w9, w9, #0, #1
 ; NONEON-NOSVE-NEXT:    sbfx w10, w10, #0, #1
@@ -1041,25 +1047,26 @@ define void @masked_store_v8f32(ptr %dst, <8 x i1> %mask) {
 ;
 ; NONEON-NOSVE-LABEL: masked_store_v8f32:
 ; NONEON-NOSVE:       // %bb.0:
-; NONEON-NOSVE-NEXT:    str d0, [sp, #-16]!
+; NONEON-NOSVE-NEXT:    sub sp, sp, #16
 ; NONEON-NOSVE-NEXT:    .cfi_def_cfa_offset 16
-; NONEON-NOSVE-NEXT:    ldrb w8, [sp, #2]
-; NONEON-NOSVE-NEXT:    ldrb w9, [sp, #3]
-; NONEON-NOSVE-NEXT:    ldrb w10, [sp, #1]
-; NONEON-NOSVE-NEXT:    ldrb w12, [sp, #4]
-; NONEON-NOSVE-NEXT:    ldrb w13, [sp, #5]
-; NONEON-NOSVE-NEXT:    ldrb w14, [sp, #6]
+; NONEON-NOSVE-NEXT:    str d0, [sp, #8]
+; NONEON-NOSVE-NEXT:    ldrb w8, [sp, #10]
+; NONEON-NOSVE-NEXT:    ldrb w9, [sp, #11]
+; NONEON-NOSVE-NEXT:    ldrb w10, [sp, #9]
+; NONEON-NOSVE-NEXT:    ldrb w12, [sp, #12]
+; NONEON-NOSVE-NEXT:    ldrb w13, [sp, #13]
+; NONEON-NOSVE-NEXT:    ldrb w14, [sp, #14]
 ; NONEON-NOSVE-NEXT:    sbfx w8, w8, #0, #1
 ; NONEON-NOSVE-NEXT:    sbfx w9, w9, #0, #1
 ; NONEON-NOSVE-NEXT:    sbfx w10, w10, #0, #1
-; NONEON-NOSVE-NEXT:    ldrb w11, [sp]
+; NONEON-NOSVE-NEXT:    ldrb w11, [sp, #8]
 ; NONEON-NOSVE-NEXT:    sbfx w12, w12, #0, #1
 ; NONEON-NOSVE-NEXT:    sbfx w13, w13, #0, #1
 ; NONEON-NOSVE-NEXT:    and w8, w8, #0x4
 ; NONEON-NOSVE-NEXT:    and w9, w9, #0x8
 ; NONEON-NOSVE-NEXT:    sbfx w14, w14, #0, #1
 ; NONEON-NOSVE-NEXT:    orr w8, w8, w9
-; NONEON-NOSVE-NEXT:    ldrb w9, [sp, #7]
+; NONEON-NOSVE-NEXT:    ldrb w9, [sp, #15]
 ; NONEON-NOSVE-NEXT:    and w10, w10, #0x2
 ; NONEON-NOSVE-NEXT:    and w12, w12, #0x10
 ; NONEON-NOSVE-NEXT:    bfxil w10, w11, #0, #1
@@ -1135,10 +1142,11 @@ define void @masked_store_v2f64(ptr %dst, <2 x i1> %mask) {
 ;
 ; NONEON-NOSVE-LABEL: masked_store_v2f64:
 ; NONEON-NOSVE:       // %bb.0:
-; NONEON-NOSVE-NEXT:    str d0, [sp, #-16]!
+; NONEON-NOSVE-NEXT:    sub sp, sp, #16
 ; NONEON-NOSVE-NEXT:    .cfi_def_cfa_offset 16
-; NONEON-NOSVE-NEXT:    ldr w8, [sp, #4]
-; NONEON-NOSVE-NEXT:    ldrb w9, [sp]
+; NONEON-NOSVE-NEXT:    str d0, [sp, #8]
+; NONEON-NOSVE-NEXT:    ldr w8, [sp, #12]
+; NONEON-NOSVE-NEXT:    ldrb w9, [sp, #8]
 ; NONEON-NOSVE-NEXT:    sbfx w8, w8, #0, #1
 ; NONEON-NOSVE-NEXT:    and w8, w8, #0x2
 ; NONEON-NOSVE-NEXT:    bfxil w8, w9, #0, #1
@@ -1183,12 +1191,13 @@ define void @masked_store_v4f64(ptr %dst, <4 x i1> %mask) {
 ;
 ; NONEON-NOSVE-LABEL: masked_store_v4f64:
 ; NONEON-NOSVE:       // %bb.0:
-; NONEON-NOSVE-NEXT:    str d0, [sp, #-16]!
+; NONEON-NOSVE-NEXT:    sub sp, sp, #16
 ; NONEON-NOSVE-NEXT:    .cfi_def_cfa_offset 16
-; NONEON-NOSVE-NEXT:    ldrh w8, [sp, #2]
-; NONEON-NOSVE-NEXT:    ldrh w9, [sp, #4]
-; NONEON-NOSVE-NEXT:    ldrh w10, [sp, #6]
-; NONEON-NOSVE-NEXT:    ldrh w11, [sp]
+; NONEON-NOSVE-NEXT:    str d0, [sp, #8]
+; NONEON-NOSVE-NEXT:    ldrh w8, [sp, #10]
+; NONEON-NOSVE-NEXT:    ldrh w9, [sp, #12]
+; NONEON-NOSVE-NEXT:    ldrh w10, [sp, #14]
+; NONEON-NOSVE-NEXT:    ldrh w11, [sp, #8]
 ; NONEON-NOSVE-NEXT:    sbfx w8, w8, #0, #1
 ; NONEON-NOSVE-NEXT:    sbfx w9, w9, #0, #1
 ; NONEON-NOSVE-NEXT:    sbfx w10, w10, #0, #1

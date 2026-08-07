@@ -740,8 +740,6 @@ define i4 @convert_to_bitmask_float(<4 x float> %vec) {
 define i8 @convert_large_vector(<8 x i32> %vec) {
 ; CHECK-SD-LABEL: convert_large_vector:
 ; CHECK-SD:       ; %bb.0:
-; CHECK-SD-NEXT:    sub sp, sp, #16
-; CHECK-SD-NEXT:    .cfi_def_cfa_offset 16
 ; CHECK-SD-NEXT:    cmeq.4s v1, v1, #0
 ; CHECK-SD-NEXT:    cmeq.4s v0, v0, #0
 ; CHECK-SD-NEXT:    adrp x8, lCPI15_0@PAGE
@@ -751,7 +749,6 @@ define i8 @convert_large_vector(<8 x i32> %vec) {
 ; CHECK-SD-NEXT:    addv.8h h0, v0
 ; CHECK-SD-NEXT:    fmov w8, s0
 ; CHECK-SD-NEXT:    and w0, w8, #0xff
-; CHECK-SD-NEXT:    add sp, sp, #16
 ; CHECK-SD-NEXT:    ret
 ;
 ; CHECK-GI-LABEL: convert_large_vector:
@@ -912,8 +909,6 @@ define <8 x i1> @no_convert_without_direct_bitcast(<8 x i16> %vec) {
 define i6 @no_combine_illegal_num_elements(<6 x i32> %vec) {
 ; CHECK-SD-LABEL: no_combine_illegal_num_elements:
 ; CHECK-SD:       ; %bb.0:
-; CHECK-SD-NEXT:    sub sp, sp, #16
-; CHECK-SD-NEXT:    .cfi_def_cfa_offset 16
 ; CHECK-SD-NEXT:    fmov s0, w0
 ; CHECK-SD-NEXT:    fmov s1, w4
 ; CHECK-SD-NEXT:    mov.s v0[1], w1
@@ -938,7 +933,6 @@ define i6 @no_combine_illegal_num_elements(<6 x i32> %vec) {
 ; CHECK-SD-NEXT:    bfi w8, w10, #4, #1
 ; CHECK-SD-NEXT:    orr w8, w8, w9, lsl #5
 ; CHECK-SD-NEXT:    and w0, w8, #0x3f
-; CHECK-SD-NEXT:    add sp, sp, #16
 ; CHECK-SD-NEXT:    ret
 ;
 ; CHECK-GI-LABEL: no_combine_illegal_num_elements:
@@ -986,7 +980,6 @@ define i6 @no_combine_illegal_num_elements(<6 x i32> %vec) {
 define <2 x i8> @vector_to_vector_cast(<16 x i1> %arg) nounwind {
 ; CHECK-SD-LABEL: vector_to_vector_cast:
 ; CHECK-SD:       ; %bb.0:
-; CHECK-SD-NEXT:    sub sp, sp, #16
 ; CHECK-SD-NEXT:    shl.16b v0, v0, #7
 ; CHECK-SD-NEXT:    adrp x8, lCPI20_0@PAGE
 ; CHECK-SD-NEXT:    ldr q1, [x8, lCPI20_0@PAGEOFF]
@@ -998,7 +991,6 @@ define <2 x i8> @vector_to_vector_cast(<16 x i1> %arg) nounwind {
 ; CHECK-SD-NEXT:    ushll.8h v0, v0, #0
 ; CHECK-SD-NEXT:    ushll.4s v0, v0, #0
 ; CHECK-SD-NEXT:    ; kill: def $d0 killed $d0 killed $q0
-; CHECK-SD-NEXT:    add sp, sp, #16
 ; CHECK-SD-NEXT:    ret
 ;
 ; CHECK-GI-LABEL: vector_to_vector_cast:

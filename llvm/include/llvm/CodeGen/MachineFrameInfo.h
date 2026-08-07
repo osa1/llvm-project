@@ -189,14 +189,17 @@ private:
     /// If true, the object has been sign-extended.
     bool isSExt = false;
 
+    /// TODO: Document. This is to mark isel `CreateStackTemporary`s.
+    bool isTemporary = false;
+
     uint8_t SSPLayout = SSPLK_None;
 
     StackObject(uint64_t Size, Align Alignment, int64_t SPOffset,
                 bool IsImmutable, bool IsSpillSlot, const AllocaInst *Alloca,
-                bool IsAliased, uint8_t StackID = 0)
+                bool IsAliased, uint8_t StackID = 0, bool IsTemporary = false)
         : SPOffset(SPOffset), Size(Size), Alignment(Alignment),
           isImmutable(IsImmutable), isSpillSlot(IsSpillSlot), StackID(StackID),
-          Alloca(Alloca), isAliased(IsAliased) {}
+          Alloca(Alloca), isAliased(IsAliased), isTemporary(IsTemporary) {}
   };
 
   /// The alignment of the stack.
@@ -739,6 +742,12 @@ public:
     return Objects[ObjectIdx+NumFixedObjects].isAliased;
   }
 
+  bool isTemporaryObjectIndex(int ObjectIdx) const {
+    assert(unsigned(ObjectIdx+NumFixedObjects) < Objects.size() &&
+           "Invalid Object Idx!");
+    return Objects[ObjectIdx+NumFixedObjects].isTemporary;
+  }
+
   /// Set "maybe pointed to by an LLVM IR value" for an object.
   void setIsAliasedObjectIndex(int ObjectIdx, bool IsAliased) {
     assert(unsigned(ObjectIdx+NumFixedObjects) < Objects.size() &&
@@ -827,9 +836,9 @@ public:
   /// Create a new statically sized stack object, returning
   /// a nonnegative identifier to represent it.
   LLVM_ABI int CreateStackObject(uint64_t Size, Align Alignment,
-                                 bool isSpillSlot,
+                                 bool IsSpillSlot,
                                  const AllocaInst *Alloca = nullptr,
-                                 uint8_t ID = 0);
+                                 uint8_t ID = 0, bool IsTemporary = false);
 
   /// Create a new statically sized stack object that represents a spill slot,
   /// returning a nonnegative identifier to represent it.

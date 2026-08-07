@@ -91,8 +91,6 @@ define void @foo_sext_v2i64_v2i32(ptr %dest, ptr %mask, ptr %src) {
 ; CHECK-LE:       @ %bb.0: @ %entry
 ; CHECK-LE-NEXT:    .save {r4, r5, r7, lr}
 ; CHECK-LE-NEXT:    push {r4, r5, r7, lr}
-; CHECK-LE-NEXT:    .pad #4
-; CHECK-LE-NEXT:    sub sp, #4
 ; CHECK-LE-NEXT:    ldrd r12, lr, [r1]
 ; CHECK-LE-NEXT:    movs r1, #0
 ; CHECK-LE-NEXT:    @ implicit-def: $q1
@@ -136,15 +134,12 @@ define void @foo_sext_v2i64_v2i32(ptr %dest, ptr %mask, ptr %src) {
 ; CHECK-LE-NEXT:    lsls r1, r1, #30
 ; CHECK-LE-NEXT:    it mi
 ; CHECK-LE-NEXT:    vstrmi d3, [r0, #8]
-; CHECK-LE-NEXT:    add sp, #4
 ; CHECK-LE-NEXT:    pop {r4, r5, r7, pc}
 ;
 ; CHECK-BE-LABEL: foo_sext_v2i64_v2i32:
 ; CHECK-BE:       @ %bb.0: @ %entry
 ; CHECK-BE-NEXT:    .save {r4, r5, r7, lr}
 ; CHECK-BE-NEXT:    push {r4, r5, r7, lr}
-; CHECK-BE-NEXT:    .pad #4
-; CHECK-BE-NEXT:    sub sp, #4
 ; CHECK-BE-NEXT:    ldrd r12, lr, [r1]
 ; CHECK-BE-NEXT:    rsbs.w r3, lr, #0
 ; CHECK-BE-NEXT:    mov.w r1, #0
@@ -199,7 +194,6 @@ define void @foo_sext_v2i64_v2i32(ptr %dest, ptr %mask, ptr %src) {
 ; CHECK-BE-NEXT:    lsls r1, r1, #31
 ; CHECK-BE-NEXT:    it ne
 ; CHECK-BE-NEXT:    vstrne d1, [r0, #8]
-; CHECK-BE-NEXT:    add sp, #4
 ; CHECK-BE-NEXT:    pop {r4, r5, r7, pc}
 entry:
   %0 = load <2 x i32>, ptr %mask, align 4
@@ -215,8 +209,6 @@ define void @foo_sext_v2i64_v2i32_unaligned(ptr %dest, ptr %mask, ptr %src) {
 ; CHECK-LE:       @ %bb.0: @ %entry
 ; CHECK-LE-NEXT:    .save {r4, r5, r7, lr}
 ; CHECK-LE-NEXT:    push {r4, r5, r7, lr}
-; CHECK-LE-NEXT:    .pad #4
-; CHECK-LE-NEXT:    sub sp, #4
 ; CHECK-LE-NEXT:    ldrd r12, lr, [r1]
 ; CHECK-LE-NEXT:    movs r1, #0
 ; CHECK-LE-NEXT:    @ implicit-def: $q0
@@ -262,15 +254,12 @@ define void @foo_sext_v2i64_v2i32_unaligned(ptr %dest, ptr %mask, ptr %src) {
 ; CHECK-LE-NEXT:    itt mi
 ; CHECK-LE-NEXT:    vmovmi r1, r2, d1
 ; CHECK-LE-NEXT:    strdmi r1, r2, [r0, #8]
-; CHECK-LE-NEXT:    add sp, #4
 ; CHECK-LE-NEXT:    pop {r4, r5, r7, pc}
 ;
 ; CHECK-BE-LABEL: foo_sext_v2i64_v2i32_unaligned:
 ; CHECK-BE:       @ %bb.0: @ %entry
 ; CHECK-BE-NEXT:    .save {r4, r5, r7, lr}
 ; CHECK-BE-NEXT:    push {r4, r5, r7, lr}
-; CHECK-BE-NEXT:    .pad #4
-; CHECK-BE-NEXT:    sub sp, #4
 ; CHECK-BE-NEXT:    ldrd r12, lr, [r1]
 ; CHECK-BE-NEXT:    rsbs.w r3, lr, #0
 ; CHECK-BE-NEXT:    mov.w r1, #0
@@ -327,7 +316,6 @@ define void @foo_sext_v2i64_v2i32_unaligned(ptr %dest, ptr %mask, ptr %src) {
 ; CHECK-BE-NEXT:    itt ne
 ; CHECK-BE-NEXT:    vmovne r1, r2, d1
 ; CHECK-BE-NEXT:    strdne r2, r1, [r0, #8]
-; CHECK-BE-NEXT:    add sp, #4
 ; CHECK-BE-NEXT:    pop {r4, r5, r7, pc}
 entry:
   %0 = load <2 x i32>, ptr %mask, align 4
@@ -343,8 +331,6 @@ define void @foo_zext_v2i64_v2i32(ptr %dest, ptr %mask, ptr %src) {
 ; CHECK-LE:       @ %bb.0: @ %entry
 ; CHECK-LE-NEXT:    .save {r4, lr}
 ; CHECK-LE-NEXT:    push {r4, lr}
-; CHECK-LE-NEXT:    .pad #4
-; CHECK-LE-NEXT:    sub sp, #4
 ; CHECK-LE-NEXT:    ldrd r12, lr, [r1]
 ; CHECK-LE-NEXT:    movs r1, #0
 ; CHECK-LE-NEXT:    @ implicit-def: $q0
@@ -384,15 +370,12 @@ define void @foo_zext_v2i64_v2i32(ptr %dest, ptr %mask, ptr %src) {
 ; CHECK-LE-NEXT:    lsls r1, r1, #30
 ; CHECK-LE-NEXT:    it mi
 ; CHECK-LE-NEXT:    vstrmi d1, [r0, #8]
-; CHECK-LE-NEXT:    add sp, #4
 ; CHECK-LE-NEXT:    pop {r4, pc}
 ;
 ; CHECK-BE-LABEL: foo_zext_v2i64_v2i32:
 ; CHECK-BE:       @ %bb.0: @ %entry
 ; CHECK-BE-NEXT:    .save {r7, lr}
 ; CHECK-BE-NEXT:    push {r7, lr}
-; CHECK-BE-NEXT:    .pad #4
-; CHECK-BE-NEXT:    sub sp, #4
 ; CHECK-BE-NEXT:    ldrd r12, lr, [r1]
 ; CHECK-BE-NEXT:    rsbs.w r3, lr, #0
 ; CHECK-BE-NEXT:    mov.w r1, #0
@@ -442,7 +425,6 @@ define void @foo_zext_v2i64_v2i32(ptr %dest, ptr %mask, ptr %src) {
 ; CHECK-BE-NEXT:    lsls r1, r1, #31
 ; CHECK-BE-NEXT:    it ne
 ; CHECK-BE-NEXT:    vstrne d1, [r0, #8]
-; CHECK-BE-NEXT:    add sp, #4
 ; CHECK-BE-NEXT:    pop {r7, pc}
 entry:
   %0 = load <2 x i32>, ptr %mask, align 4
@@ -458,8 +440,6 @@ define void @foo_zext_v2i64_v2i32_unaligned(ptr %dest, ptr %mask, ptr %src) {
 ; CHECK-LE:       @ %bb.0: @ %entry
 ; CHECK-LE-NEXT:    .save {r4, lr}
 ; CHECK-LE-NEXT:    push {r4, lr}
-; CHECK-LE-NEXT:    .pad #4
-; CHECK-LE-NEXT:    sub sp, #4
 ; CHECK-LE-NEXT:    ldrd r12, lr, [r1]
 ; CHECK-LE-NEXT:    movs r1, #0
 ; CHECK-LE-NEXT:    @ implicit-def: $q0
@@ -501,15 +481,12 @@ define void @foo_zext_v2i64_v2i32_unaligned(ptr %dest, ptr %mask, ptr %src) {
 ; CHECK-LE-NEXT:    itt mi
 ; CHECK-LE-NEXT:    vmovmi r1, r2, d1
 ; CHECK-LE-NEXT:    strdmi r1, r2, [r0, #8]
-; CHECK-LE-NEXT:    add sp, #4
 ; CHECK-LE-NEXT:    pop {r4, pc}
 ;
 ; CHECK-BE-LABEL: foo_zext_v2i64_v2i32_unaligned:
 ; CHECK-BE:       @ %bb.0: @ %entry
 ; CHECK-BE-NEXT:    .save {r7, lr}
 ; CHECK-BE-NEXT:    push {r7, lr}
-; CHECK-BE-NEXT:    .pad #4
-; CHECK-BE-NEXT:    sub sp, #4
 ; CHECK-BE-NEXT:    ldrd r12, lr, [r1]
 ; CHECK-BE-NEXT:    rsbs.w r3, lr, #0
 ; CHECK-BE-NEXT:    mov.w r1, #0
@@ -561,7 +538,6 @@ define void @foo_zext_v2i64_v2i32_unaligned(ptr %dest, ptr %mask, ptr %src) {
 ; CHECK-BE-NEXT:    itt ne
 ; CHECK-BE-NEXT:    vmovne r1, r2, d1
 ; CHECK-BE-NEXT:    strdne r2, r1, [r0, #8]
-; CHECK-BE-NEXT:    add sp, #4
 ; CHECK-BE-NEXT:    pop {r7, pc}
 entry:
   %0 = load <2 x i32>, ptr %mask, align 4
@@ -726,8 +702,6 @@ define void @foo_v4f32_v4f16(ptr %dest, ptr %mask, ptr %src) {
 ; CHECK-LE:       @ %bb.0: @ %entry
 ; CHECK-LE-NEXT:    .save {r7, lr}
 ; CHECK-LE-NEXT:    push {r7, lr}
-; CHECK-LE-NEXT:    .pad #4
-; CHECK-LE-NEXT:    sub sp, #4
 ; CHECK-LE-NEXT:    vldrh.s32 q0, [r1]
 ; CHECK-LE-NEXT:    vcmp.s32 gt, q0, zr
 ; CHECK-LE-NEXT:    @ implicit-def: $q0
@@ -794,7 +768,6 @@ define void @foo_v4f32_v4f16(ptr %dest, ptr %mask, ptr %src) {
 ; CHECK-LE-NEXT:    itt mi
 ; CHECK-LE-NEXT:    vmovmi r1, s2
 ; CHECK-LE-NEXT:    strmi r1, [r0, #12]
-; CHECK-LE-NEXT:    add sp, #4
 ; CHECK-LE-NEXT:    pop {r7, pc}
 ; CHECK-LE-NEXT:  .LBB18_6: @ %cond.load
 ; CHECK-LE-NEXT:    vldr.16 s0, [r2]
@@ -817,8 +790,6 @@ define void @foo_v4f32_v4f16(ptr %dest, ptr %mask, ptr %src) {
 ; CHECK-BE:       @ %bb.0: @ %entry
 ; CHECK-BE-NEXT:    .save {r7, lr}
 ; CHECK-BE-NEXT:    push {r7, lr}
-; CHECK-BE-NEXT:    .pad #4
-; CHECK-BE-NEXT:    sub sp, #4
 ; CHECK-BE-NEXT:    vldrh.s32 q0, [r1]
 ; CHECK-BE-NEXT:    vcmp.s32 gt, q0, zr
 ; CHECK-BE-NEXT:    @ implicit-def: $q0
@@ -885,7 +856,6 @@ define void @foo_v4f32_v4f16(ptr %dest, ptr %mask, ptr %src) {
 ; CHECK-BE-NEXT:    itt ne
 ; CHECK-BE-NEXT:    vmovne r1, s2
 ; CHECK-BE-NEXT:    strne r1, [r0, #12]
-; CHECK-BE-NEXT:    add sp, #4
 ; CHECK-BE-NEXT:    pop {r7, pc}
 ; CHECK-BE-NEXT:  .LBB18_6: @ %cond.load
 ; CHECK-BE-NEXT:    vldr.16 s0, [r2]
@@ -917,8 +887,6 @@ define void @foo_v4f32_v4f16_unaligned(ptr %dest, ptr %mask, ptr %src) {
 ; CHECK-LE:       @ %bb.0: @ %entry
 ; CHECK-LE-NEXT:    .save {r7, lr}
 ; CHECK-LE-NEXT:    push {r7, lr}
-; CHECK-LE-NEXT:    .pad #4
-; CHECK-LE-NEXT:    sub sp, #4
 ; CHECK-LE-NEXT:    vldrh.s32 q0, [r1]
 ; CHECK-LE-NEXT:    vcmp.s32 gt, q0, zr
 ; CHECK-LE-NEXT:    @ implicit-def: $q0
@@ -985,7 +953,6 @@ define void @foo_v4f32_v4f16_unaligned(ptr %dest, ptr %mask, ptr %src) {
 ; CHECK-LE-NEXT:    itt mi
 ; CHECK-LE-NEXT:    vmovmi r1, s2
 ; CHECK-LE-NEXT:    strmi r1, [r0, #12]
-; CHECK-LE-NEXT:    add sp, #4
 ; CHECK-LE-NEXT:    pop {r7, pc}
 ; CHECK-LE-NEXT:  .LBB19_6: @ %cond.load
 ; CHECK-LE-NEXT:    vldr.16 s0, [r2]
@@ -1008,8 +975,6 @@ define void @foo_v4f32_v4f16_unaligned(ptr %dest, ptr %mask, ptr %src) {
 ; CHECK-BE:       @ %bb.0: @ %entry
 ; CHECK-BE-NEXT:    .save {r7, lr}
 ; CHECK-BE-NEXT:    push {r7, lr}
-; CHECK-BE-NEXT:    .pad #4
-; CHECK-BE-NEXT:    sub sp, #4
 ; CHECK-BE-NEXT:    vldrh.s32 q0, [r1]
 ; CHECK-BE-NEXT:    vcmp.s32 gt, q0, zr
 ; CHECK-BE-NEXT:    @ implicit-def: $q0
@@ -1076,7 +1041,6 @@ define void @foo_v4f32_v4f16_unaligned(ptr %dest, ptr %mask, ptr %src) {
 ; CHECK-BE-NEXT:    itt ne
 ; CHECK-BE-NEXT:    vmovne r1, s2
 ; CHECK-BE-NEXT:    strne r1, [r0, #12]
-; CHECK-BE-NEXT:    add sp, #4
 ; CHECK-BE-NEXT:    pop {r7, pc}
 ; CHECK-BE-NEXT:  .LBB19_6: @ %cond.load
 ; CHECK-BE-NEXT:    vldr.16 s0, [r2]

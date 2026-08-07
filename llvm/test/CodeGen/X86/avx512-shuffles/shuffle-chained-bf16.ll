@@ -12,7 +12,7 @@ define <2 x bfloat> @shuffle_chained_v32bf16_v2bf16(<32 x bfloat> %a) {
 ; CHECK-NEXT:    movq %rsp, %rbp
 ; CHECK-NEXT:    .cfi_def_cfa_register %rbp
 ; CHECK-NEXT:    andq $-64, %rsp
-; CHECK-NEXT:    subq $128, %rsp
+; CHECK-NEXT:    subq $64, %rsp
 ; CHECK-NEXT:    vmovd {{.*#+}} xmm1 = [0,16,0,0,0,0,0,0]
 ; CHECK-NEXT:    vpermw %zmm0, %zmm1, %zmm0
 ; CHECK-NEXT:    # kill: def $xmm0 killed $xmm0 killed $zmm0
@@ -35,7 +35,7 @@ define <2 x bfloat> @shuffle_chained_v16bf16(<16 x bfloat> %a) {
 ; CHECK-NEXT:    movq %rsp, %rbp
 ; CHECK-NEXT:    .cfi_def_cfa_register %rbp
 ; CHECK-NEXT:    andq $-32, %rsp
-; CHECK-NEXT:    subq $96, %rsp
+; CHECK-NEXT:    subq $64, %rsp
 ; CHECK-NEXT:    vmovdqa %ymm0, (%rsp)
 ; CHECK-NEXT:    vpunpcklwd {{.*#+}} xmm0 = xmm0[0],mem[0],xmm0[1],mem[1],xmm0[2],mem[2],xmm0[3],mem[3]
 ; CHECK-NEXT:    movq %rbp, %rsp

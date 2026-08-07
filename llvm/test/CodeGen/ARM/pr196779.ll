@@ -4,8 +4,6 @@
 define void @repro(ptr %out, ptr %base) {
 ; CHECK-LABEL: repro:
 ; CHECK:       @ %bb.0:
-; CHECK-NEXT:    .pad #4
-; CHECK-NEXT:    sub sp, sp, #4
 ; CHECK-NEXT:    mov r0, #1
 ; CHECK-NEXT:    cmp r0, #0
 ; CHECK-NEXT:    bne .LBB0_3
@@ -51,42 +49,37 @@ define void @repro(ptr %out, ptr %base) {
 ; CHECK-NEXT:    ldrdeq r2, r3, [r0]
 ; CHECK-NEXT:    vmoveq d16, r2, r3
 ; CHECK-NEXT:    cmp r0, #0
-; CHECK-NEXT:    beq .LBB0_16
+; CHECK-NEXT:    beq .LBB0_17
 ; CHECK-NEXT:  @ %bb.11: @ %else14
 ; CHECK-NEXT:    cmp r0, #0
-; CHECK-NEXT:    beq .LBB0_17
+; CHECK-NEXT:    beq .LBB0_18
 ; CHECK-NEXT:  .LBB0_12: @ %else16
 ; CHECK-NEXT:    cmp r0, #0
-; CHECK-NEXT:    beq .LBB0_18
+; CHECK-NEXT:    beq .LBB0_19
 ; CHECK-NEXT:  .LBB0_13: @ %else18
 ; CHECK-NEXT:    cmp r0, #0
-; CHECK-NEXT:    beq .LBB0_19
-; CHECK-NEXT:  .LBB0_14: @ %else20
+; CHECK-NEXT:    bne .LBB0_15
+; CHECK-NEXT:  .LBB0_14: @ %cond.store19
+; CHECK-NEXT:    vst1.8 {d21}, [r0]
+; CHECK-NEXT:  .LBB0_15: @ %else20
 ; CHECK-NEXT:    cmp r0, #0
-; CHECK-NEXT:    beq .LBB0_20
-; CHECK-NEXT:  .LBB0_15: @ %else22
-; CHECK-NEXT:    add sp, sp, #4
+; CHECK-NEXT:    bxne lr
+; CHECK-NEXT:  .LBB0_16: @ %cond.store21
+; CHECK-NEXT:    vst1.8 {d16}, [r0]
 ; CHECK-NEXT:    bx lr
-; CHECK-NEXT:  .LBB0_16: @ %cond.store
+; CHECK-NEXT:  .LBB0_17: @ %cond.store
 ; CHECK-NEXT:    vst1.8 {d18}, [r0]
 ; CHECK-NEXT:    cmp r0, #0
 ; CHECK-NEXT:    bne .LBB0_12
-; CHECK-NEXT:  .LBB0_17: @ %cond.store15
+; CHECK-NEXT:  .LBB0_18: @ %cond.store15
 ; CHECK-NEXT:    vst1.8 {d20}, [r0]
 ; CHECK-NEXT:    cmp r0, #0
 ; CHECK-NEXT:    bne .LBB0_13
-; CHECK-NEXT:  .LBB0_18: @ %cond.store17
+; CHECK-NEXT:  .LBB0_19: @ %cond.store17
 ; CHECK-NEXT:    vst1.8 {d22}, [r0]
 ; CHECK-NEXT:    cmp r0, #0
-; CHECK-NEXT:    bne .LBB0_14
-; CHECK-NEXT:  .LBB0_19: @ %cond.store19
-; CHECK-NEXT:    vst1.8 {d21}, [r0]
-; CHECK-NEXT:    cmp r0, #0
-; CHECK-NEXT:    bne .LBB0_15
-; CHECK-NEXT:  .LBB0_20: @ %cond.store21
-; CHECK-NEXT:    vst1.8 {d16}, [r0]
-; CHECK-NEXT:    add sp, sp, #4
-; CHECK-NEXT:    bx lr
+; CHECK-NEXT:    beq .LBB0_14
+; CHECK-NEXT:    b .LBB0_15
   %ptrs = insertelement <5 x ptr> poison, ptr %base, i32 2
   %mask = freeze <5 x i1> zeroinitializer
   %g = call <5 x i64> @llvm.masked.gather.v5i64.v5p0(<5 x ptr> align 4 %ptrs, <5 x i1> %mask, <5 x i64> zeroinitializer)

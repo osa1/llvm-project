@@ -4,11 +4,8 @@
 define void @convert_v3f32() {
 ; CHECK-LABEL: convert_v3f32:
 ; CHECK:       // %bb.0: // %entry
-; CHECK-NEXT:    sub sp, sp, #16
-; CHECK-NEXT:    .cfi_def_cfa_offset 16
 ; CHECK-NEXT:    strb wzr, [x8]
 ; CHECK-NEXT:    strh wzr, [x8]
-; CHECK-NEXT:    add sp, sp, #16
 ; CHECK-NEXT:    ret
 entry:
   br label %bb

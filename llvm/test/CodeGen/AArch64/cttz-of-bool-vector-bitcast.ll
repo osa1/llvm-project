@@ -425,8 +425,6 @@ define <4 x i32> @cttz_vector_result_no_fold(<4 x i32> %v) {
 define i3 @cttz_v3i8_non_pow2_lanes(<3 x i8> %v) {
 ; CHECK-LE-LABEL: cttz_v3i8_non_pow2_lanes:
 ; CHECK-LE:       // %bb.0:
-; CHECK-LE-NEXT:    sub sp, sp, #16
-; CHECK-LE-NEXT:    .cfi_def_cfa_offset 16
 ; CHECK-LE-NEXT:    fmov s0, w0
 ; CHECK-LE-NEXT:    mov v0.h[1], w1
 ; CHECK-LE-NEXT:    mov v0.h[2], w2
@@ -442,13 +440,10 @@ define i3 @cttz_v3i8_non_pow2_lanes(<3 x i8> %v) {
 ; CHECK-LE-NEXT:    orr w8, w8, #0x8
 ; CHECK-LE-NEXT:    rbit w8, w8
 ; CHECK-LE-NEXT:    clz w0, w8
-; CHECK-LE-NEXT:    add sp, sp, #16
 ; CHECK-LE-NEXT:    ret
 ;
 ; CHECK-BE-LABEL: cttz_v3i8_non_pow2_lanes:
 ; CHECK-BE:       // %bb.0:
-; CHECK-BE-NEXT:    sub sp, sp, #16
-; CHECK-BE-NEXT:    .cfi_def_cfa_offset 16
 ; CHECK-BE-NEXT:    fmov s0, w0
 ; CHECK-BE-NEXT:    mov v0.h[1], w1
 ; CHECK-BE-NEXT:    mov v0.h[2], w2
@@ -464,7 +459,6 @@ define i3 @cttz_v3i8_non_pow2_lanes(<3 x i8> %v) {
 ; CHECK-BE-NEXT:    orr w8, w8, #0x8
 ; CHECK-BE-NEXT:    rbit w8, w8
 ; CHECK-BE-NEXT:    clz w0, w8
-; CHECK-BE-NEXT:    add sp, sp, #16
 ; CHECK-BE-NEXT:    ret
   %cmp = icmp slt <3 x i8> %v, splat (i8 0)
   %bm = bitcast <3 x i1> %cmp to i3

@@ -65,14 +65,14 @@ define i32 @test_Greater_than(ptr %colauths) {
 ; POWERPC_32-NEXT:    xxmrghw v2, vs1, vs0
 ; POWERPC_32-NEXT:    vcmpgtuh v2, v2, v3
 ; POWERPC_32-NEXT:    vmrghh v2, v2, v2
-; POWERPC_32-NEXT:    stxv v2, -32(r1)
-; POWERPC_32-NEXT:    lwz r3, -20(r1)
-; POWERPC_32-NEXT:    lwz r4, -24(r1)
+; POWERPC_32-NEXT:    stxv v2, -16(r1)
+; POWERPC_32-NEXT:    lwz r3, -4(r1)
+; POWERPC_32-NEXT:    lwz r4, -8(r1)
 ; POWERPC_32-NEXT:    clrlwi r3, r3, 31
 ; POWERPC_32-NEXT:    rlwimi r3, r4, 1, 30, 30
-; POWERPC_32-NEXT:    lwz r4, -28(r1)
+; POWERPC_32-NEXT:    lwz r4, -12(r1)
 ; POWERPC_32-NEXT:    rlwimi r3, r4, 2, 29, 29
-; POWERPC_32-NEXT:    lwz r4, -32(r1)
+; POWERPC_32-NEXT:    lwz r4, -16(r1)
 ; POWERPC_32-NEXT:    rlwimi r3, r4, 3, 28, 28
 ; POWERPC_32-NEXT:    popcntw r3, r3
 ; POWERPC_32-NEXT:    blr
@@ -148,14 +148,14 @@ define range(i32 0, 5) i32 @cols_needed(ptr %colauths){
 ; POWERPC_32-NEXT:    xxlxor vs1, vs1, vs1
 ; POWERPC_32-NEXT:    xvcmpeqsp vs0, vs0, vs1
 ; POWERPC_32-NEXT:    xxlnor vs0, vs0, vs0
-; POWERPC_32-NEXT:    stxv vs0, -32(r1)
-; POWERPC_32-NEXT:    lwz r3, -24(r1)
-; POWERPC_32-NEXT:    lwz r4, -28(r1)
+; POWERPC_32-NEXT:    stxv vs0, -16(r1)
+; POWERPC_32-NEXT:    lwz r3, -8(r1)
+; POWERPC_32-NEXT:    lwz r4, -12(r1)
 ; POWERPC_32-NEXT:    rlwinm r3, r3, 1, 30, 30
 ; POWERPC_32-NEXT:    rlwimi r3, r4, 2, 29, 29
-; POWERPC_32-NEXT:    lwz r4, -32(r1)
+; POWERPC_32-NEXT:    lwz r4, -16(r1)
 ; POWERPC_32-NEXT:    rlwimi r3, r4, 3, 0, 28
-; POWERPC_32-NEXT:    lwz r4, -20(r1)
+; POWERPC_32-NEXT:    lwz r4, -4(r1)
 ; POWERPC_32-NEXT:    sub r3, r3, r4
 ; POWERPC_32-NEXT:    clrlwi r3, r3, 28
 ; POWERPC_32-NEXT:    popcntw r3, r3

@@ -2134,7 +2134,6 @@ define i32 @mask_v3i1(<3 x i32> %a, <3 x i32> %b) nounwind {
 ;
 ; X86-SSE4-LABEL: mask_v3i1:
 ; X86-SSE4:       # %bb.0: # %bb
-; X86-SSE4-NEXT:    subl $1, %esp
 ; X86-SSE4-NEXT:    pcmpeqd %xmm1, %xmm0
 ; X86-SSE4-NEXT:    pcmpeqd %xmm1, %xmm1
 ; X86-SSE4-NEXT:    pxor %xmm0, %xmm1
@@ -2150,11 +2149,9 @@ define i32 @mask_v3i1(<3 x i32> %a, <3 x i32> %b) nounwind {
 ; X86-SSE4-NEXT:    je .LBB30_2
 ; X86-SSE4-NEXT:  # %bb.1: # %bb3
 ; X86-SSE4-NEXT:    xorl %eax, %eax
-; X86-SSE4-NEXT:    addl $1, %esp
 ; X86-SSE4-NEXT:    retl
 ; X86-SSE4-NEXT:  .LBB30_2: # %bb4
 ; X86-SSE4-NEXT:    movl $1, %eax
-; X86-SSE4-NEXT:    addl $1, %esp
 ; X86-SSE4-NEXT:    retl
 ;
 ; X64-SSE4-LABEL: mask_v3i1:
@@ -2181,7 +2178,6 @@ define i32 @mask_v3i1(<3 x i32> %a, <3 x i32> %b) nounwind {
 ;
 ; X86-AVX1-LABEL: mask_v3i1:
 ; X86-AVX1:       # %bb.0: # %bb
-; X86-AVX1-NEXT:    subl $1, %esp
 ; X86-AVX1-NEXT:    vpcmpeqd %xmm1, %xmm0, %xmm0
 ; X86-AVX1-NEXT:    vpcmpeqd %xmm1, %xmm1, %xmm1
 ; X86-AVX1-NEXT:    vpxor %xmm1, %xmm0, %xmm0
@@ -2197,11 +2193,9 @@ define i32 @mask_v3i1(<3 x i32> %a, <3 x i32> %b) nounwind {
 ; X86-AVX1-NEXT:    je .LBB30_2
 ; X86-AVX1-NEXT:  # %bb.1: # %bb3
 ; X86-AVX1-NEXT:    xorl %eax, %eax
-; X86-AVX1-NEXT:    addl $1, %esp
 ; X86-AVX1-NEXT:    retl
 ; X86-AVX1-NEXT:  .LBB30_2: # %bb4
 ; X86-AVX1-NEXT:    movl $1, %eax
-; X86-AVX1-NEXT:    addl $1, %esp
 ; X86-AVX1-NEXT:    retl
 ;
 ; X64-AVX1-LABEL: mask_v3i1:
@@ -2228,7 +2222,6 @@ define i32 @mask_v3i1(<3 x i32> %a, <3 x i32> %b) nounwind {
 ;
 ; X86-AVX2-LABEL: mask_v3i1:
 ; X86-AVX2:       # %bb.0: # %bb
-; X86-AVX2-NEXT:    subl $1, %esp
 ; X86-AVX2-NEXT:    vpcmpeqd %xmm1, %xmm0, %xmm0
 ; X86-AVX2-NEXT:    vpcmpeqd %xmm1, %xmm1, %xmm1
 ; X86-AVX2-NEXT:    vpxor %xmm1, %xmm0, %xmm0
@@ -2244,11 +2237,9 @@ define i32 @mask_v3i1(<3 x i32> %a, <3 x i32> %b) nounwind {
 ; X86-AVX2-NEXT:    je .LBB30_2
 ; X86-AVX2-NEXT:  # %bb.1: # %bb3
 ; X86-AVX2-NEXT:    xorl %eax, %eax
-; X86-AVX2-NEXT:    addl $1, %esp
 ; X86-AVX2-NEXT:    retl
 ; X86-AVX2-NEXT:  .LBB30_2: # %bb4
 ; X86-AVX2-NEXT:    movl $1, %eax
-; X86-AVX2-NEXT:    addl $1, %esp
 ; X86-AVX2-NEXT:    retl
 ;
 ; X64-AVX2-LABEL: mask_v3i1:

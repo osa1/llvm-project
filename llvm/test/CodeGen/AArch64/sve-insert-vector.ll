@@ -372,11 +372,7 @@ define <vscale x 2 x i64> @insert_fixed_v2i64_nxv2i64(<vscale x 2 x i64> %vec, <
 define <vscale x 2 x i64> @insert_fixed_v4i64_nxv2i64(<vscale x 2 x i64> %vec, ptr %ptr) nounwind #0 {
 ; CHECK-LABEL: insert_fixed_v4i64_nxv2i64:
 ; CHECK:       // %bb.0:
-; CHECK-NEXT:    str x29, [sp, #-16]! // 8-byte Folded Spill
-; CHECK-NEXT:    addvl sp, sp, #-1
 ; CHECK-NEXT:    ldr z0, [x0]
-; CHECK-NEXT:    addvl sp, sp, #1
-; CHECK-NEXT:    ldr x29, [sp], #16 // 8-byte Folded Reload
 ; CHECK-NEXT:    ret
   %subvec = load <4 x i64>, ptr %ptr
   %retval = call <vscale x 2 x i64> @llvm.vector.insert.nxv2i64.v4i64(<vscale x 2 x i64> %vec, <4 x i64> %subvec, i64 4)

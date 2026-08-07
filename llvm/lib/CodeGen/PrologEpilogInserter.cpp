@@ -955,6 +955,8 @@ void PEIImpl::calculateFrameObjectOffsets(MachineFunction &MF) {
     // Resolve offsets for objects in the local block.
     for (unsigned i = 0, e = MFI.getLocalFrameObjectCount(); i != e; ++i) {
       std::pair<int, int64_t> Entry = MFI.getLocalFrameObjectMap(i);
+      if (MFI.isDeadObjectIndex(Entry.first))
+        continue;
       int64_t FIOffset = (StackGrowsDown ? -Offset : Offset) + Entry.second;
       LLVM_DEBUG(dbgs() << "alloc FI(" << Entry.first << ") at SP[" << FIOffset
                         << "]\n");

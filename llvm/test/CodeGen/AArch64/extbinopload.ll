@@ -1390,15 +1390,12 @@ define <4 x i32> @atomic(ptr %p) {
 define <4 x i32> @volatile(ptr %p) {
 ; CHECK-LABEL: volatile:
 ; CHECK:       // %bb.0:
-; CHECK-NEXT:    sub sp, sp, #16
-; CHECK-NEXT:    .cfi_def_cfa_offset 16
 ; CHECK-NEXT:    ldr s0, [x0, #4]
 ; CHECK-NEXT:    ldr s1, [x0]
 ; CHECK-NEXT:    ushll v0.8h, v0.8b, #0
 ; CHECK-NEXT:    ushll v1.8h, v1.8b, #0
 ; CHECK-NEXT:    ushll v0.4s, v0.4h, #3
 ; CHECK-NEXT:    uaddw v0.4s, v0.4s, v1.4h
-; CHECK-NEXT:    add sp, sp, #16
 ; CHECK-NEXT:    ret
   %l1b = load volatile float, ptr %p
   %l1 = bitcast float %l1b to <4 x i8>

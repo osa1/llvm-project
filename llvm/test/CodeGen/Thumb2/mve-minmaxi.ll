@@ -199,13 +199,10 @@ declare <1 x i64> @llvm.smax.v1i64(<1 x i64> %a, <1 x i64> %b) readnone
 define arm_aapcs_vfpcc <1 x i64> @smax1i64(<1 x i64> %a, <1 x i64> %b) {
 ; CHECK-LABEL: smax1i64:
 ; CHECK:       @ %bb.0:
-; CHECK-NEXT:    .pad #8
-; CHECK-NEXT:    sub sp, #8
 ; CHECK-NEXT:    subs.w r12, r2, r0
 ; CHECK-NEXT:    sbcs.w r12, r3, r1
 ; CHECK-NEXT:    csel r0, r0, r2, lt
 ; CHECK-NEXT:    csel r1, r1, r3, lt
-; CHECK-NEXT:    add sp, #8
 ; CHECK-NEXT:    bx lr
   %c = call <1 x i64> @llvm.smax.v1i64(<1 x i64> %a, <1 x i64> %b)
   ret <1 x i64> %c
@@ -472,13 +469,10 @@ declare <1 x i64> @llvm.umax.v1i64(<1 x i64> %a, <1 x i64> %b) readnone
 define arm_aapcs_vfpcc <1 x i64> @umax1i64(<1 x i64> %a, <1 x i64> %b) {
 ; CHECK-LABEL: umax1i64:
 ; CHECK:       @ %bb.0:
-; CHECK-NEXT:    .pad #8
-; CHECK-NEXT:    sub sp, #8
 ; CHECK-NEXT:    subs.w r12, r2, r0
 ; CHECK-NEXT:    sbcs.w r12, r3, r1
 ; CHECK-NEXT:    csel r0, r0, r2, lo
 ; CHECK-NEXT:    csel r1, r1, r3, lo
-; CHECK-NEXT:    add sp, #8
 ; CHECK-NEXT:    bx lr
   %c = call <1 x i64> @llvm.umax.v1i64(<1 x i64> %a, <1 x i64> %b)
   ret <1 x i64> %c
@@ -752,13 +746,10 @@ declare <1 x i64> @llvm.smin.v1i64(<1 x i64> %a, <1 x i64> %b) readnone
 define arm_aapcs_vfpcc <1 x i64> @smin1i64(<1 x i64> %a, <1 x i64> %b) {
 ; CHECK-LABEL: smin1i64:
 ; CHECK:       @ %bb.0:
-; CHECK-NEXT:    .pad #8
-; CHECK-NEXT:    sub sp, #8
 ; CHECK-NEXT:    subs.w r12, r0, r2
 ; CHECK-NEXT:    sbcs.w r12, r1, r3
 ; CHECK-NEXT:    csel r0, r0, r2, lt
 ; CHECK-NEXT:    csel r1, r1, r3, lt
-; CHECK-NEXT:    add sp, #8
 ; CHECK-NEXT:    bx lr
   %c = call <1 x i64> @llvm.smin.v1i64(<1 x i64> %a, <1 x i64> %b)
   ret <1 x i64> %c
@@ -1025,13 +1016,10 @@ declare <1 x i64> @llvm.umin.v1i64(<1 x i64> %a, <1 x i64> %b) readnone
 define arm_aapcs_vfpcc <1 x i64> @umin1i64(<1 x i64> %a, <1 x i64> %b) {
 ; CHECK-LABEL: umin1i64:
 ; CHECK:       @ %bb.0:
-; CHECK-NEXT:    .pad #8
-; CHECK-NEXT:    sub sp, #8
 ; CHECK-NEXT:    subs.w r12, r0, r2
 ; CHECK-NEXT:    sbcs.w r12, r1, r3
 ; CHECK-NEXT:    csel r0, r0, r2, lo
 ; CHECK-NEXT:    csel r1, r1, r3, lo
-; CHECK-NEXT:    add sp, #8
 ; CHECK-NEXT:    bx lr
   %c = call <1 x i64> @llvm.umin.v1i64(<1 x i64> %a, <1 x i64> %b)
   ret <1 x i64> %c

@@ -931,14 +931,11 @@ define <1 x i64> @srem_v1i64(<1 x i64> %op1, <1 x i64> %op2) {
 ;
 ; NONEON-NOSVE-LABEL: srem_v1i64:
 ; NONEON-NOSVE:       // %bb.0:
-; NONEON-NOSVE-NEXT:    sub sp, sp, #16
-; NONEON-NOSVE-NEXT:    .cfi_def_cfa_offset 16
 ; NONEON-NOSVE-NEXT:    fmov x8, d1
 ; NONEON-NOSVE-NEXT:    fmov x9, d0
 ; NONEON-NOSVE-NEXT:    sdiv x10, x9, x8
 ; NONEON-NOSVE-NEXT:    msub x8, x10, x8, x9
 ; NONEON-NOSVE-NEXT:    fmov d0, x8
-; NONEON-NOSVE-NEXT:    add sp, sp, #16
 ; NONEON-NOSVE-NEXT:    ret
   %res = srem <1 x i64> %op1, %op2
   ret <1 x i64> %res
@@ -1951,14 +1948,11 @@ define <1 x i64> @urem_v1i64(<1 x i64> %op1, <1 x i64> %op2) {
 ;
 ; NONEON-NOSVE-LABEL: urem_v1i64:
 ; NONEON-NOSVE:       // %bb.0:
-; NONEON-NOSVE-NEXT:    sub sp, sp, #16
-; NONEON-NOSVE-NEXT:    .cfi_def_cfa_offset 16
 ; NONEON-NOSVE-NEXT:    fmov x8, d1
 ; NONEON-NOSVE-NEXT:    fmov x9, d0
 ; NONEON-NOSVE-NEXT:    udiv x10, x9, x8
 ; NONEON-NOSVE-NEXT:    msub x8, x10, x8, x9
 ; NONEON-NOSVE-NEXT:    fmov d0, x8
-; NONEON-NOSVE-NEXT:    add sp, sp, #16
 ; NONEON-NOSVE-NEXT:    ret
   %res = urem <1 x i64> %op1, %op2
   ret <1 x i64> %res

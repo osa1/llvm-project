@@ -44,8 +44,6 @@ define void @fun0(<4 x i31> %src, ptr %p)
 define i16 @fun1(<16 x i1> %src)
 ; CHECK-LABEL: fun1:
 ; CHECK:       # %bb.0:
-; CHECK-NEXT:    aghi %r15, -168
-; CHECK-NEXT:    .cfi_def_cfa_offset 328
 ; CHECK-NEXT:    vlgvb %r0, %v24, 0
 ; CHECK-NEXT:    vlgvb %r1, %v24, 1
 ; CHECK-NEXT:    risblg %r0, %r0, 16, 144, 15
@@ -79,7 +77,6 @@ define i16 @fun1(<16 x i1> %src)
 ; CHECK-NEXT:    vlgvb %r1, %v24, 15
 ; CHECK-NEXT:    rosbg %r0, %r1, 63, 63, 0
 ; CHECK-NEXT:    llhr %r2, %r0
-; CHECK-NEXT:    aghi %r15, 168
 ; CHECK-NEXT:    br %r14
 {
   %res = bitcast <16 x i1> %src to i16

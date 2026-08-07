@@ -5114,7 +5114,9 @@ LegalizerHelper::createStackTemporary(TypeSize Bytes, Align Alignment,
                                       MachinePointerInfo &PtrInfo) {
   MachineFunction &MF = MIRBuilder.getMF();
   const DataLayout &DL = MIRBuilder.getDataLayout();
-  int FrameIdx = MF.getFrameInfo().CreateStackObject(Bytes, Alignment, false);
+  int FrameIdx = MF.getFrameInfo().CreateStackObject(
+      Bytes, Alignment, /*IsSpillSlot=*/false, nullptr, 0,
+      /*IsTemporary=*/true);
 
   unsigned AddrSpace = DL.getAllocaAddrSpace();
   LLT FramePtrTy = LLT::pointer(AddrSpace, DL.getPointerSizeInBits(AddrSpace));

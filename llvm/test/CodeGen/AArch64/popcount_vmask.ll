@@ -267,8 +267,6 @@ define i32 @non_vmask_popcount_1(half %a) {
 define i32 @non_vmask_popcount_2(<8 x i16> %a) {
 ; CHECK-LABEL: non_vmask_popcount_2:
 ; CHECK:       // %bb.0:
-; CHECK-NEXT:    sub sp, sp, #16
-; CHECK-NEXT:    .cfi_def_cfa_offset 16
 ; CHECK-NEXT:    xtn v0.8b, v0.8h
 ; CHECK-NEXT:    umov w8, v0.b[0]
 ; CHECK-NEXT:    umov w9, v0.b[1]
@@ -291,7 +289,6 @@ define i32 @non_vmask_popcount_2(<8 x i16> %a) {
 ; CHECK-NEXT:    cnt v0.8b, v0.8b
 ; CHECK-NEXT:    addv b0, v0.8b
 ; CHECK-NEXT:    fmov w0, s0
-; CHECK-NEXT:    add sp, sp, #16
 ; CHECK-NEXT:    ret
   %mask = trunc <8 x i16> %a to <8 x i2>
   %t1 = bitcast <8 x i2> %mask to i16

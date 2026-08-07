@@ -635,12 +635,9 @@ define <1 x i64> @ctlz_v1i64(<1 x i64> %op) {
 ;
 ; NONEON-NOSVE-LABEL: ctlz_v1i64:
 ; NONEON-NOSVE:       // %bb.0:
-; NONEON-NOSVE-NEXT:    sub sp, sp, #16
-; NONEON-NOSVE-NEXT:    .cfi_def_cfa_offset 16
 ; NONEON-NOSVE-NEXT:    fmov x8, d0
 ; NONEON-NOSVE-NEXT:    clz x8, x8
 ; NONEON-NOSVE-NEXT:    fmov d0, x8
-; NONEON-NOSVE-NEXT:    add sp, sp, #16
 ; NONEON-NOSVE-NEXT:    ret
   %res = call <1 x i64> @llvm.ctlz.v1i64(<1 x i64> %op)
   ret <1 x i64> %res
@@ -2293,8 +2290,6 @@ define <1 x i64> @ctpop_v1i64(<1 x i64> %op) {
 ;
 ; NONEON-NOSVE-LABEL: ctpop_v1i64:
 ; NONEON-NOSVE:       // %bb.0:
-; NONEON-NOSVE-NEXT:    sub sp, sp, #16
-; NONEON-NOSVE-NEXT:    .cfi_def_cfa_offset 16
 ; NONEON-NOSVE-NEXT:    fmov x9, d0
 ; NONEON-NOSVE-NEXT:    mov x8, #72340172838076673 // =0x101010101010101
 ; NONEON-NOSVE-NEXT:    lsr x10, x9, #1
@@ -2309,7 +2304,6 @@ define <1 x i64> @ctpop_v1i64(<1 x i64> %op) {
 ; NONEON-NOSVE-NEXT:    mul x8, x9, x8
 ; NONEON-NOSVE-NEXT:    lsr x8, x8, #56
 ; NONEON-NOSVE-NEXT:    fmov d0, x8
-; NONEON-NOSVE-NEXT:    add sp, sp, #16
 ; NONEON-NOSVE-NEXT:    ret
   %res = call <1 x i64> @llvm.ctpop.v1i64(<1 x i64> %op)
   ret <1 x i64> %res
@@ -3182,13 +3176,10 @@ define <1 x i64> @cttz_v1i64(<1 x i64> %op) {
 ;
 ; NONEON-NOSVE-LABEL: cttz_v1i64:
 ; NONEON-NOSVE:       // %bb.0:
-; NONEON-NOSVE-NEXT:    sub sp, sp, #16
-; NONEON-NOSVE-NEXT:    .cfi_def_cfa_offset 16
 ; NONEON-NOSVE-NEXT:    fmov x8, d0
 ; NONEON-NOSVE-NEXT:    rbit x8, x8
 ; NONEON-NOSVE-NEXT:    clz x8, x8
 ; NONEON-NOSVE-NEXT:    fmov d0, x8
-; NONEON-NOSVE-NEXT:    add sp, sp, #16
 ; NONEON-NOSVE-NEXT:    ret
   %res = call <1 x i64> @llvm.cttz.v1i64(<1 x i64> %op)
   ret <1 x i64> %res

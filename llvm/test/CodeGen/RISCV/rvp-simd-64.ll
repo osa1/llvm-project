@@ -1177,11 +1177,7 @@ define <8 x i8> @test_insert_vector_8_elem3(<8 x i8> %a, i8 %val) {
 define <2 x i32> @test_insert_vector_32(<2 x i32> %a, i32 %val) {
 ; RV32-LABEL: test_insert_vector_32:
 ; RV32:       # %bb.0:
-; RV32-NEXT:    addi sp, sp, -16
-; RV32-NEXT:    .cfi_def_cfa_offset 16
 ; RV32-NEXT:    mv a0, a2
-; RV32-NEXT:    addi sp, sp, 16
-; RV32-NEXT:    .cfi_def_cfa_offset 0
 ; RV32-NEXT:    ret
 ;
 ; RV64-LABEL: test_insert_vector_32:
@@ -1196,11 +1192,7 @@ define <2 x i32> @test_insert_vector_32(<2 x i32> %a, i32 %val) {
 define <2 x i32> @test_insert_vector_32_elem1(<2 x i32> %a, i32 %val) {
 ; RV32-LABEL: test_insert_vector_32_elem1:
 ; RV32:       # %bb.0:
-; RV32-NEXT:    addi sp, sp, -16
-; RV32-NEXT:    .cfi_def_cfa_offset 16
 ; RV32-NEXT:    mv a1, a2
-; RV32-NEXT:    addi sp, sp, 16
-; RV32-NEXT:    .cfi_def_cfa_offset 0
 ; RV32-NEXT:    ret
 ;
 ; RV64-LABEL: test_insert_vector_32_elem1:

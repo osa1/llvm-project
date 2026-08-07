@@ -3867,26 +3867,26 @@ define <1 x i64> @clmul_v1i64(<1 x i64> %x, <1 x i64> %y) {
 ; CHECK:       @ %bb.0:
 ; CHECK-NEXT:    .save {r4, r5, r6, r7, r8, r9, r10, r11, lr}
 ; CHECK-NEXT:    push.w {r4, r5, r6, r7, r8, r9, r10, r11, lr}
-; CHECK-NEXT:    .pad #44
-; CHECK-NEXT:    sub sp, #44
+; CHECK-NEXT:    .pad #28
+; CHECK-NEXT:    sub sp, #28
 ; CHECK-NEXT:    bic r12, r2, #-286331154
 ; CHECK-NEXT:    bic lr, r1, #-572662307
 ; CHECK-NEXT:    bic r8, r2, #-572662307
 ; CHECK-NEXT:    bic r5, r1, #-286331154
 ; CHECK-NEXT:    mul r6, lr, r12
-; CHECK-NEXT:    str r0, [sp, #4] @ 4-byte Spill
+; CHECK-NEXT:    str r0, [sp] @ 4-byte Spill
 ; CHECK-NEXT:    bic r0, r2, #2004318071
 ; CHECK-NEXT:    mul r7, r5, r8
 ; CHECK-NEXT:    bic r4, r2, #-1145324613
 ; CHECK-NEXT:    mov r10, r12
 ; CHECK-NEXT:    mul r11, lr, r0
-; CHECK-NEXT:    str.w r12, [sp, #16] @ 4-byte Spill
-; CHECK-NEXT:    str r0, [sp, #24] @ 4-byte Spill
-; CHECK-NEXT:    str r4, [sp, #28] @ 4-byte Spill
+; CHECK-NEXT:    str.w r12, [sp, #12] @ 4-byte Spill
+; CHECK-NEXT:    str r0, [sp, #20] @ 4-byte Spill
+; CHECK-NEXT:    str r4, [sp, #24] @ 4-byte Spill
 ; CHECK-NEXT:    eor.w r9, r7, r6
 ; CHECK-NEXT:    bic r6, r1, #-1145324613
 ; CHECK-NEXT:    bic r1, r1, #2004318071
-; CHECK-NEXT:    str.w r8, [sp, #20] @ 4-byte Spill
+; CHECK-NEXT:    str.w r8, [sp, #16] @ 4-byte Spill
 ; CHECK-NEXT:    mul r7, r6, r0
 ; CHECK-NEXT:    eor.w r9, r9, r7
 ; CHECK-NEXT:    mul r7, r1, r4
@@ -3914,7 +3914,7 @@ define <1 x i64> @clmul_v1i64(<1 x i64> %x, <1 x i64> %y) {
 ; CHECK-NEXT:    mul r7, lr, r4
 ; CHECK-NEXT:    eor.w r0, r5, r7
 ; CHECK-NEXT:    mul r5, r6, r8
-; CHECK-NEXT:    ldr r7, [sp, #4] @ 4-byte Reload
+; CHECK-NEXT:    ldr r7, [sp] @ 4-byte Reload
 ; CHECK-NEXT:    bic r11, r7, #-286331154
 ; CHECK-NEXT:    bic r10, r7, #-1145324613
 ; CHECK-NEXT:    bic r8, r7, #2004318071
@@ -3926,10 +3926,10 @@ define <1 x i64> @clmul_v1i64(<1 x i64> %x, <1 x i64> %y) {
 ; CHECK-NEXT:    add.w r0, r12, r1
 ; CHECK-NEXT:    bic r12, r7, #-572662307
 ; CHECK-NEXT:    bic r1, r3, #-286331154
-; CHECK-NEXT:    str r0, [sp, #8] @ 4-byte Spill
+; CHECK-NEXT:    str r0, [sp, #4] @ 4-byte Spill
 ; CHECK-NEXT:    bic r0, r3, #2004318071
 ; CHECK-NEXT:    mul r4, r12, r1
-; CHECK-NEXT:    str.w r12, [sp, #12] @ 4-byte Spill
+; CHECK-NEXT:    str.w r12, [sp, #8] @ 4-byte Spill
 ; CHECK-NEXT:    mul r9, r10, r0
 ; CHECK-NEXT:    eors r6, r4
 ; CHECK-NEXT:    mul r4, r11, r1
@@ -3965,12 +3965,12 @@ define <1 x i64> @clmul_v1i64(<1 x i64> %x, <1 x i64> %y) {
 ; CHECK-NEXT:    bic r5, r4, #-572662307
 ; CHECK-NEXT:    eors r0, r6
 ; CHECK-NEXT:    eors r0, r1
-; CHECK-NEXT:    ldr r1, [sp, #8] @ 4-byte Reload
+; CHECK-NEXT:    ldr r1, [sp, #4] @ 4-byte Reload
 ; CHECK-NEXT:    bic r0, r0, #2004318071
 ; CHECK-NEXT:    add r0, r7
 ; CHECK-NEXT:    rbit r7, r2
 ; CHECK-NEXT:    eors r0, r1
-; CHECK-NEXT:    str r0, [sp, #8] @ 4-byte Spill
+; CHECK-NEXT:    str r0, [sp, #4] @ 4-byte Spill
 ; CHECK-NEXT:    bic r12, r7, #-286331154
 ; CHECK-NEXT:    bic r0, r7, #-572662307
 ; CHECK-NEXT:    bic r1, r4, #-286331154
@@ -4002,15 +4002,15 @@ define <1 x i64> @clmul_v1i64(<1 x i64> %x, <1 x i64> %y) {
 ; CHECK-NEXT:    eor.w r9, r9, r2
 ; CHECK-NEXT:    mul r2, r6, r12
 ; CHECK-NEXT:    muls r0, r6, r0
-; CHECK-NEXT:    ldr r6, [sp, #20] @ 4-byte Reload
+; CHECK-NEXT:    ldr r6, [sp, #16] @ 4-byte Reload
 ; CHECK-NEXT:    eors r1, r7
-; CHECK-NEXT:    ldrd r5, r7, [sp, #12] @ 8-byte Folded Reload
+; CHECK-NEXT:    ldrd r5, r7, [sp, #8] @ 8-byte Folded Reload
 ; CHECK-NEXT:    eor.w r9, r9, r2
 ; CHECK-NEXT:    mul r2, r4, r3
-; CHECK-NEXT:    ldr r3, [sp, #24] @ 4-byte Reload
+; CHECK-NEXT:    ldr r3, [sp, #20] @ 4-byte Reload
 ; CHECK-NEXT:    eors r0, r1
 ; CHECK-NEXT:    mul r1, r4, r12
-; CHECK-NEXT:    ldr r4, [sp, #28] @ 4-byte Reload
+; CHECK-NEXT:    ldr r4, [sp, #24] @ 4-byte Reload
 ; CHECK-NEXT:    eor.w r2, r2, r9
 ; CHECK-NEXT:    bic r2, r2, #-1145324613
 ; CHECK-NEXT:    eors r0, r1
@@ -4018,7 +4018,7 @@ define <1 x i64> @clmul_v1i64(<1 x i64> %x, <1 x i64> %y) {
 ; CHECK-NEXT:    movt r1, #2184
 ; CHECK-NEXT:    ands r0, r1
 ; CHECK-NEXT:    add r2, lr
-; CHECK-NEXT:    ldr r1, [sp, #8] @ 4-byte Reload
+; CHECK-NEXT:    ldr r1, [sp, #4] @ 4-byte Reload
 ; CHECK-NEXT:    add r0, r2
 ; CHECK-NEXT:    mul r2, r11, r6
 ; CHECK-NEXT:    rbit r0, r0
@@ -4058,7 +4058,7 @@ define <1 x i64> @clmul_v1i64(<1 x i64> %x, <1 x i64> %y) {
 ; CHECK-NEXT:    eors r2, r3
 ; CHECK-NEXT:    bic r2, r2, #2004318071
 ; CHECK-NEXT:    add.w r0, r12, r2
-; CHECK-NEXT:    add sp, #44
+; CHECK-NEXT:    add sp, #28
 ; CHECK-NEXT:    pop.w {r4, r5, r6, r7, r8, r9, r10, r11, pc}
   %a = call <1 x i64> @llvm.clmul.v1i64(<1 x i64> %x, <1 x i64> %y)
   ret <1 x i64> %a
@@ -12148,29 +12148,29 @@ define <1 x i64> @clmulr_v1i64(<1 x i64> %a, <1 x i64> %b) nounwind {
 ; CHECK:       @ %bb.0:
 ; CHECK-NEXT:    .save {r4, r5, r6, r7, r8, r9, r10, r11, lr}
 ; CHECK-NEXT:    push.w {r4, r5, r6, r7, r8, r9, r10, r11, lr}
-; CHECK-NEXT:    .pad #44
-; CHECK-NEXT:    sub sp, #44
+; CHECK-NEXT:    .pad #36
+; CHECK-NEXT:    sub sp, #36
 ; CHECK-NEXT:    rbit r4, r3
 ; CHECK-NEXT:    rbit r5, r0
 ; CHECK-NEXT:    bic r12, r4, #-286331154
 ; CHECK-NEXT:    bic r9, r4, #-572662307
 ; CHECK-NEXT:    bic r11, r5, #-286331154
 ; CHECK-NEXT:    bic r8, r5, #-572662307
-; CHECK-NEXT:    str r1, [sp, #4] @ 4-byte Spill
+; CHECK-NEXT:    str r1, [sp, #8] @ 4-byte Spill
 ; CHECK-NEXT:    bic r0, r4, #-1145324613
 ; CHECK-NEXT:    mul r1, r8, r12
-; CHECK-NEXT:    str r3, [sp, #12] @ 4-byte Spill
+; CHECK-NEXT:    str r3, [sp, #16] @ 4-byte Spill
 ; CHECK-NEXT:    bic r3, r5, #2004318071
 ; CHECK-NEXT:    mul r6, r11, r9
-; CHECK-NEXT:    str r0, [sp, #28] @ 4-byte Spill
+; CHECK-NEXT:    str r0, [sp, #32] @ 4-byte Spill
 ; CHECK-NEXT:    rbit r2, r2
-; CHECK-NEXT:    str.w r12, [sp, #16] @ 4-byte Spill
-; CHECK-NEXT:    str.w r9, [sp, #20] @ 4-byte Spill
+; CHECK-NEXT:    str.w r12, [sp, #20] @ 4-byte Spill
+; CHECK-NEXT:    str.w r9, [sp, #24] @ 4-byte Spill
 ; CHECK-NEXT:    eor.w lr, r6, r1
 ; CHECK-NEXT:    bic r6, r4, #2004318071
 ; CHECK-NEXT:    bic r1, r5, #-1145324613
 ; CHECK-NEXT:    mul r5, r3, r0
-; CHECK-NEXT:    str r6, [sp, #24] @ 4-byte Spill
+; CHECK-NEXT:    str r6, [sp, #28] @ 4-byte Spill
 ; CHECK-NEXT:    mul r7, r1, r6
 ; CHECK-NEXT:    mul r10, r8, r6
 ; CHECK-NEXT:    eor.w r7, r7, lr
@@ -12198,7 +12198,7 @@ define <1 x i64> @clmulr_v1i64(<1 x i64> %a, <1 x i64> %b) nounwind {
 ; CHECK-NEXT:    mul r7, r8, r0
 ; CHECK-NEXT:    bic r6, r6, #-1145324613
 ; CHECK-NEXT:    add r6, lr
-; CHECK-NEXT:    ldr.w lr, [sp, #4] @ 4-byte Reload
+; CHECK-NEXT:    ldr.w lr, [sp, #8] @ 4-byte Reload
 ; CHECK-NEXT:    eors r7, r4
 ; CHECK-NEXT:    eor.w r0, r7, r1
 ; CHECK-NEXT:    mul r1, r3, r12
@@ -12206,7 +12206,7 @@ define <1 x i64> @clmulr_v1i64(<1 x i64> %a, <1 x i64> %b) nounwind {
 ; CHECK-NEXT:    bic r12, r3, #-572662307
 ; CHECK-NEXT:    bic r11, r3, #-286331154
 ; CHECK-NEXT:    bic r8, r3, #-1145324613
-; CHECK-NEXT:    str.w r12, [sp, #8] @ 4-byte Spill
+; CHECK-NEXT:    str.w r12, [sp, #12] @ 4-byte Spill
 ; CHECK-NEXT:    mul r7, r11, r5
 ; CHECK-NEXT:    eors r0, r1
 ; CHECK-NEXT:    bic r0, r0, #2004318071
@@ -12236,7 +12236,7 @@ define <1 x i64> @clmulr_v1i64(<1 x i64> %a, <1 x i64> %b) nounwind {
 ; CHECK-NEXT:    mul r3, r11, r2
 ; CHECK-NEXT:    mov r6, lr
 ; CHECK-NEXT:    muls r2, r7, r2
-; CHECK-NEXT:    ldr r7, [sp, #12] @ 4-byte Reload
+; CHECK-NEXT:    ldr r7, [sp, #16] @ 4-byte Reload
 ; CHECK-NEXT:    eors r3, r4
 ; CHECK-NEXT:    mul r4, r8, r1
 ; CHECK-NEXT:    mul r1, r9, r1
@@ -12259,7 +12259,7 @@ define <1 x i64> @clmulr_v1i64(<1 x i64> %a, <1 x i64> %b) nounwind {
 ; CHECK-NEXT:    add r0, r3
 ; CHECK-NEXT:    bic r3, lr, #-572662307
 ; CHECK-NEXT:    eor.w r0, r0, r10
-; CHECK-NEXT:    str r0, [sp] @ 4-byte Spill
+; CHECK-NEXT:    str r0, [sp, #4] @ 4-byte Spill
 ; CHECK-NEXT:    mul r0, r3, r12
 ; CHECK-NEXT:    eor.w lr, r4, r0
 ; CHECK-NEXT:    bic r4, r7, #2004318071
@@ -12283,17 +12283,17 @@ define <1 x i64> @clmulr_v1i64(<1 x i64> %a, <1 x i64> %b) nounwind {
 ; CHECK-NEXT:    add lr, r7
 ; CHECK-NEXT:    mul r7, r2, r6
 ; CHECK-NEXT:    muls r3, r6, r3
-; CHECK-NEXT:    ldr r6, [sp, #20] @ 4-byte Reload
+; CHECK-NEXT:    ldr r6, [sp, #24] @ 4-byte Reload
 ; CHECK-NEXT:    muls r2, r4, r2
 ; CHECK-NEXT:    eor.w r10, r10, r7
 ; CHECK-NEXT:    mul r7, r1, r12
 ; CHECK-NEXT:    muls r1, r5, r1
-; CHECK-NEXT:    ldr r5, [sp, #8] @ 4-byte Reload
+; CHECK-NEXT:    ldr r5, [sp, #12] @ 4-byte Reload
 ; CHECK-NEXT:    eors r2, r3
-; CHECK-NEXT:    ldr r3, [sp, #24] @ 4-byte Reload
+; CHECK-NEXT:    ldr r3, [sp, #28] @ 4-byte Reload
 ; CHECK-NEXT:    eor.w r10, r10, r7
 ; CHECK-NEXT:    mul r7, r0, r4
-; CHECK-NEXT:    ldr r4, [sp, #28] @ 4-byte Reload
+; CHECK-NEXT:    ldr r4, [sp, #32] @ 4-byte Reload
 ; CHECK-NEXT:    mul r0, r0, r12
 ; CHECK-NEXT:    eors r1, r2
 ; CHECK-NEXT:    mul r2, r11, r6
@@ -12304,9 +12304,9 @@ define <1 x i64> @clmulr_v1i64(<1 x i64> %a, <1 x i64> %b) nounwind {
 ; CHECK-NEXT:    movt r1, #2184
 ; CHECK-NEXT:    ands r0, r1
 ; CHECK-NEXT:    add r7, lr
-; CHECK-NEXT:    ldr r1, [sp] @ 4-byte Reload
+; CHECK-NEXT:    ldr r1, [sp, #4] @ 4-byte Reload
 ; CHECK-NEXT:    add r0, r7
-; CHECK-NEXT:    ldr r7, [sp, #16] @ 4-byte Reload
+; CHECK-NEXT:    ldr r7, [sp, #20] @ 4-byte Reload
 ; CHECK-NEXT:    rbit r0, r0
 ; CHECK-NEXT:    eor.w r0, r1, r0, lsr #1
 ; CHECK-NEXT:    mul r1, r5, r7
@@ -12346,7 +12346,7 @@ define <1 x i64> @clmulr_v1i64(<1 x i64> %a, <1 x i64> %b) nounwind {
 ; CHECK-NEXT:    bic r2, r2, #2004318071
 ; CHECK-NEXT:    add.w r1, r12, r2
 ; CHECK-NEXT:    rbit r1, r1
-; CHECK-NEXT:    add sp, #44
+; CHECK-NEXT:    add sp, #36
 ; CHECK-NEXT:    pop.w {r4, r5, r6, r7, r8, r9, r10, r11, pc}
   %a.ext = zext <1 x i64> %a to <1 x i128>
   %b.ext = zext <1 x i64> %b to <1 x i128>
@@ -15355,29 +15355,29 @@ define <1 x i64> @clmulh_v1i64(<1 x i64> %a, <1 x i64> %b) nounwind {
 ; CHECK:       @ %bb.0:
 ; CHECK-NEXT:    .save {r4, r5, r6, r7, r8, r9, r10, r11, lr}
 ; CHECK-NEXT:    push.w {r4, r5, r6, r7, r8, r9, r10, r11, lr}
-; CHECK-NEXT:    .pad #44
-; CHECK-NEXT:    sub sp, #44
+; CHECK-NEXT:    .pad #36
+; CHECK-NEXT:    sub sp, #36
 ; CHECK-NEXT:    rbit r4, r3
 ; CHECK-NEXT:    rbit r5, r0
 ; CHECK-NEXT:    bic r12, r4, #-286331154
 ; CHECK-NEXT:    bic r9, r4, #-572662307
 ; CHECK-NEXT:    bic r11, r5, #-286331154
 ; CHECK-NEXT:    bic r8, r5, #-572662307
-; CHECK-NEXT:    str r1, [sp, #4] @ 4-byte Spill
+; CHECK-NEXT:    str r1, [sp, #8] @ 4-byte Spill
 ; CHECK-NEXT:    bic r0, r4, #-1145324613
 ; CHECK-NEXT:    mul r1, r8, r12
-; CHECK-NEXT:    str r3, [sp, #12] @ 4-byte Spill
+; CHECK-NEXT:    str r3, [sp, #16] @ 4-byte Spill
 ; CHECK-NEXT:    bic r3, r5, #2004318071
 ; CHECK-NEXT:    mul r6, r11, r9
-; CHECK-NEXT:    str r0, [sp, #28] @ 4-byte Spill
+; CHECK-NEXT:    str r0, [sp, #32] @ 4-byte Spill
 ; CHECK-NEXT:    rbit r2, r2
-; CHECK-NEXT:    str.w r12, [sp, #16] @ 4-byte Spill
-; CHECK-NEXT:    str.w r9, [sp, #20] @ 4-byte Spill
+; CHECK-NEXT:    str.w r12, [sp, #20] @ 4-byte Spill
+; CHECK-NEXT:    str.w r9, [sp, #24] @ 4-byte Spill
 ; CHECK-NEXT:    eor.w lr, r6, r1
 ; CHECK-NEXT:    bic r6, r4, #2004318071
 ; CHECK-NEXT:    bic r1, r5, #-1145324613
 ; CHECK-NEXT:    mul r5, r3, r0
-; CHECK-NEXT:    str r6, [sp, #24] @ 4-byte Spill
+; CHECK-NEXT:    str r6, [sp, #28] @ 4-byte Spill
 ; CHECK-NEXT:    mul r7, r1, r6
 ; CHECK-NEXT:    mul r10, r8, r6
 ; CHECK-NEXT:    eor.w r7, r7, lr
@@ -15405,7 +15405,7 @@ define <1 x i64> @clmulh_v1i64(<1 x i64> %a, <1 x i64> %b) nounwind {
 ; CHECK-NEXT:    mul r7, r8, r0
 ; CHECK-NEXT:    bic r6, r6, #-1145324613
 ; CHECK-NEXT:    add r6, lr
-; CHECK-NEXT:    ldr.w lr, [sp, #4] @ 4-byte Reload
+; CHECK-NEXT:    ldr.w lr, [sp, #8] @ 4-byte Reload
 ; CHECK-NEXT:    eors r7, r4
 ; CHECK-NEXT:    eor.w r0, r7, r1
 ; CHECK-NEXT:    mul r1, r3, r12
@@ -15413,7 +15413,7 @@ define <1 x i64> @clmulh_v1i64(<1 x i64> %a, <1 x i64> %b) nounwind {
 ; CHECK-NEXT:    bic r12, r3, #-572662307
 ; CHECK-NEXT:    bic r11, r3, #-286331154
 ; CHECK-NEXT:    bic r8, r3, #-1145324613
-; CHECK-NEXT:    str.w r12, [sp, #8] @ 4-byte Spill
+; CHECK-NEXT:    str.w r12, [sp, #12] @ 4-byte Spill
 ; CHECK-NEXT:    mul r7, r11, r5
 ; CHECK-NEXT:    eors r0, r1
 ; CHECK-NEXT:    bic r0, r0, #2004318071
@@ -15443,7 +15443,7 @@ define <1 x i64> @clmulh_v1i64(<1 x i64> %a, <1 x i64> %b) nounwind {
 ; CHECK-NEXT:    mul r3, r11, r2
 ; CHECK-NEXT:    mov r6, lr
 ; CHECK-NEXT:    muls r2, r7, r2
-; CHECK-NEXT:    ldr r7, [sp, #12] @ 4-byte Reload
+; CHECK-NEXT:    ldr r7, [sp, #16] @ 4-byte Reload
 ; CHECK-NEXT:    eors r3, r4
 ; CHECK-NEXT:    mul r4, r8, r1
 ; CHECK-NEXT:    mul r1, r9, r1
@@ -15466,7 +15466,7 @@ define <1 x i64> @clmulh_v1i64(<1 x i64> %a, <1 x i64> %b) nounwind {
 ; CHECK-NEXT:    add r0, r3
 ; CHECK-NEXT:    bic r3, lr, #-572662307
 ; CHECK-NEXT:    eor.w r0, r0, r10
-; CHECK-NEXT:    str r0, [sp] @ 4-byte Spill
+; CHECK-NEXT:    str r0, [sp, #4] @ 4-byte Spill
 ; CHECK-NEXT:    mul r0, r3, r12
 ; CHECK-NEXT:    eor.w lr, r4, r0
 ; CHECK-NEXT:    bic r4, r7, #2004318071
@@ -15490,17 +15490,17 @@ define <1 x i64> @clmulh_v1i64(<1 x i64> %a, <1 x i64> %b) nounwind {
 ; CHECK-NEXT:    add lr, r7
 ; CHECK-NEXT:    mul r7, r2, r6
 ; CHECK-NEXT:    muls r3, r6, r3
-; CHECK-NEXT:    ldr r6, [sp, #20] @ 4-byte Reload
+; CHECK-NEXT:    ldr r6, [sp, #24] @ 4-byte Reload
 ; CHECK-NEXT:    muls r2, r4, r2
 ; CHECK-NEXT:    eor.w r10, r10, r7
 ; CHECK-NEXT:    mul r7, r1, r12
 ; CHECK-NEXT:    muls r1, r5, r1
-; CHECK-NEXT:    ldr r5, [sp, #8] @ 4-byte Reload
+; CHECK-NEXT:    ldr r5, [sp, #12] @ 4-byte Reload
 ; CHECK-NEXT:    eors r2, r3
-; CHECK-NEXT:    ldr r3, [sp, #24] @ 4-byte Reload
+; CHECK-NEXT:    ldr r3, [sp, #28] @ 4-byte Reload
 ; CHECK-NEXT:    eor.w r10, r10, r7
 ; CHECK-NEXT:    mul r7, r0, r4
-; CHECK-NEXT:    ldr r4, [sp, #28] @ 4-byte Reload
+; CHECK-NEXT:    ldr r4, [sp, #32] @ 4-byte Reload
 ; CHECK-NEXT:    mul r0, r0, r12
 ; CHECK-NEXT:    eors r1, r2
 ; CHECK-NEXT:    mul r2, r11, r6
@@ -15511,9 +15511,9 @@ define <1 x i64> @clmulh_v1i64(<1 x i64> %a, <1 x i64> %b) nounwind {
 ; CHECK-NEXT:    movt r1, #2184
 ; CHECK-NEXT:    ands r0, r1
 ; CHECK-NEXT:    add r7, lr
-; CHECK-NEXT:    ldr r1, [sp] @ 4-byte Reload
+; CHECK-NEXT:    ldr r1, [sp, #4] @ 4-byte Reload
 ; CHECK-NEXT:    add r0, r7
-; CHECK-NEXT:    ldr r7, [sp, #16] @ 4-byte Reload
+; CHECK-NEXT:    ldr r7, [sp, #20] @ 4-byte Reload
 ; CHECK-NEXT:    rbit r0, r0
 ; CHECK-NEXT:    eor.w r0, r1, r0, lsr #1
 ; CHECK-NEXT:    mul r1, r5, r7
@@ -15554,7 +15554,7 @@ define <1 x i64> @clmulh_v1i64(<1 x i64> %a, <1 x i64> %b) nounwind {
 ; CHECK-NEXT:    add.w r1, r12, r2
 ; CHECK-NEXT:    rbit r1, r1
 ; CHECK-NEXT:    lsrl r0, r1, #1
-; CHECK-NEXT:    add sp, #44
+; CHECK-NEXT:    add sp, #36
 ; CHECK-NEXT:    pop.w {r4, r5, r6, r7, r8, r9, r10, r11, pc}
   %a.ext = zext <1 x i64> %a to <1 x i128>
   %b.ext = zext <1 x i64> %b to <1 x i128>

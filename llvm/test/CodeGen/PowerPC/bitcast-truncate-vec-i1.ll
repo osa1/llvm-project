@@ -37,48 +37,48 @@ define fastcc <16 x i16> @test_v16i8_to_i16(<16 x i1> %0) {
 ;
 ; CHECK-P7-BE-LABEL: test_v16i8_to_i16:
 ; CHECK-P7-BE:       # %bb.0: # %Entry
-; CHECK-P7-BE-NEXT:    addi 3, 1, -32
+; CHECK-P7-BE-NEXT:    addi 3, 1, -16
 ; CHECK-P7-BE-NEXT:    xxlxor 36, 36, 36
 ; CHECK-P7-BE-NEXT:    stxvw4x 34, 0, 3
-; CHECK-P7-BE-NEXT:    lbz 3, -17(1)
-; CHECK-P7-BE-NEXT:    lbz 4, -18(1)
+; CHECK-P7-BE-NEXT:    lbz 3, -1(1)
+; CHECK-P7-BE-NEXT:    lbz 4, -2(1)
 ; CHECK-P7-BE-NEXT:    clrlwi 3, 3, 31
 ; CHECK-P7-BE-NEXT:    rlwimi 3, 4, 1, 30, 30
-; CHECK-P7-BE-NEXT:    lbz 4, -19(1)
+; CHECK-P7-BE-NEXT:    lbz 4, -3(1)
 ; CHECK-P7-BE-NEXT:    rlwimi 3, 4, 2, 29, 29
-; CHECK-P7-BE-NEXT:    lbz 4, -20(1)
+; CHECK-P7-BE-NEXT:    lbz 4, -4(1)
 ; CHECK-P7-BE-NEXT:    rlwimi 3, 4, 3, 28, 28
-; CHECK-P7-BE-NEXT:    lbz 4, -21(1)
+; CHECK-P7-BE-NEXT:    lbz 4, -5(1)
 ; CHECK-P7-BE-NEXT:    rlwimi 3, 4, 4, 27, 27
-; CHECK-P7-BE-NEXT:    lbz 4, -22(1)
+; CHECK-P7-BE-NEXT:    lbz 4, -6(1)
 ; CHECK-P7-BE-NEXT:    rlwimi 3, 4, 5, 26, 26
-; CHECK-P7-BE-NEXT:    lbz 4, -23(1)
+; CHECK-P7-BE-NEXT:    lbz 4, -7(1)
 ; CHECK-P7-BE-NEXT:    rlwimi 3, 4, 6, 25, 25
-; CHECK-P7-BE-NEXT:    lbz 4, -24(1)
+; CHECK-P7-BE-NEXT:    lbz 4, -8(1)
 ; CHECK-P7-BE-NEXT:    rlwimi 3, 4, 7, 24, 24
-; CHECK-P7-BE-NEXT:    lbz 4, -25(1)
+; CHECK-P7-BE-NEXT:    lbz 4, -9(1)
 ; CHECK-P7-BE-NEXT:    rlwimi 3, 4, 8, 23, 23
-; CHECK-P7-BE-NEXT:    lbz 4, -26(1)
+; CHECK-P7-BE-NEXT:    lbz 4, -10(1)
 ; CHECK-P7-BE-NEXT:    rlwimi 3, 4, 9, 22, 22
-; CHECK-P7-BE-NEXT:    lbz 4, -27(1)
+; CHECK-P7-BE-NEXT:    lbz 4, -11(1)
 ; CHECK-P7-BE-NEXT:    rlwimi 3, 4, 10, 21, 21
-; CHECK-P7-BE-NEXT:    lbz 4, -28(1)
+; CHECK-P7-BE-NEXT:    lbz 4, -12(1)
 ; CHECK-P7-BE-NEXT:    rlwimi 3, 4, 11, 20, 20
-; CHECK-P7-BE-NEXT:    lbz 4, -29(1)
+; CHECK-P7-BE-NEXT:    lbz 4, -13(1)
 ; CHECK-P7-BE-NEXT:    rlwimi 3, 4, 12, 19, 19
-; CHECK-P7-BE-NEXT:    lbz 4, -30(1)
+; CHECK-P7-BE-NEXT:    lbz 4, -14(1)
 ; CHECK-P7-BE-NEXT:    rlwimi 3, 4, 13, 18, 18
-; CHECK-P7-BE-NEXT:    lbz 4, -31(1)
+; CHECK-P7-BE-NEXT:    lbz 4, -15(1)
 ; CHECK-P7-BE-NEXT:    rlwimi 3, 4, 14, 17, 17
-; CHECK-P7-BE-NEXT:    lbz 4, -32(1)
+; CHECK-P7-BE-NEXT:    lbz 4, -16(1)
 ; CHECK-P7-BE-NEXT:    rlwimi 3, 4, 15, 16, 16
 ; CHECK-P7-BE-NEXT:    sldi 3, 3, 48
-; CHECK-P7-BE-NEXT:    std 3, -48(1)
-; CHECK-P7-BE-NEXT:    std 3, -40(1)
+; CHECK-P7-BE-NEXT:    std 3, -32(1)
+; CHECK-P7-BE-NEXT:    std 3, -24(1)
 ; CHECK-P7-BE-NEXT:    addis 3, 2, .LCPI0_0@toc@ha
 ; CHECK-P7-BE-NEXT:    addi 3, 3, .LCPI0_0@toc@l
 ; CHECK-P7-BE-NEXT:    lxvw4x 34, 0, 3
-; CHECK-P7-BE-NEXT:    addi 3, 1, -48
+; CHECK-P7-BE-NEXT:    addi 3, 1, -32
 ; CHECK-P7-BE-NEXT:    lxvw4x 35, 0, 3
 ; CHECK-P7-BE-NEXT:    vperm 2, 3, 4, 2
 ; CHECK-P7-BE-NEXT:    xxlxor 35, 35, 35
@@ -121,32 +121,32 @@ define fastcc <16 x i8> @test_v8i16_to_i8(<8 x i1> %0) {
 ;
 ; CHECK-P7-BE-LABEL: test_v8i16_to_i8:
 ; CHECK-P7-BE:       # %bb.0: # %Entry
-; CHECK-P7-BE-NEXT:    addi 3, 1, -32
+; CHECK-P7-BE-NEXT:    addi 3, 1, -16
 ; CHECK-P7-BE-NEXT:    xxlxor 36, 36, 36
 ; CHECK-P7-BE-NEXT:    stxvw4x 34, 0, 3
-; CHECK-P7-BE-NEXT:    lhz 3, -18(1)
-; CHECK-P7-BE-NEXT:    lhz 4, -20(1)
+; CHECK-P7-BE-NEXT:    lhz 3, -2(1)
+; CHECK-P7-BE-NEXT:    lhz 4, -4(1)
 ; CHECK-P7-BE-NEXT:    clrlwi 3, 3, 31
 ; CHECK-P7-BE-NEXT:    rlwimi 3, 4, 1, 30, 30
-; CHECK-P7-BE-NEXT:    lhz 4, -22(1)
+; CHECK-P7-BE-NEXT:    lhz 4, -6(1)
 ; CHECK-P7-BE-NEXT:    rlwimi 3, 4, 2, 29, 29
-; CHECK-P7-BE-NEXT:    lhz 4, -24(1)
+; CHECK-P7-BE-NEXT:    lhz 4, -8(1)
 ; CHECK-P7-BE-NEXT:    rlwimi 3, 4, 3, 28, 28
-; CHECK-P7-BE-NEXT:    lhz 4, -26(1)
+; CHECK-P7-BE-NEXT:    lhz 4, -10(1)
 ; CHECK-P7-BE-NEXT:    rlwimi 3, 4, 4, 27, 27
-; CHECK-P7-BE-NEXT:    lhz 4, -28(1)
+; CHECK-P7-BE-NEXT:    lhz 4, -12(1)
 ; CHECK-P7-BE-NEXT:    rlwimi 3, 4, 5, 26, 26
-; CHECK-P7-BE-NEXT:    lhz 4, -30(1)
+; CHECK-P7-BE-NEXT:    lhz 4, -14(1)
 ; CHECK-P7-BE-NEXT:    rlwimi 3, 4, 6, 25, 25
-; CHECK-P7-BE-NEXT:    lhz 4, -32(1)
+; CHECK-P7-BE-NEXT:    lhz 4, -16(1)
 ; CHECK-P7-BE-NEXT:    rlwimi 3, 4, 7, 24, 24
 ; CHECK-P7-BE-NEXT:    sldi 3, 3, 56
-; CHECK-P7-BE-NEXT:    std 3, -48(1)
-; CHECK-P7-BE-NEXT:    std 3, -40(1)
+; CHECK-P7-BE-NEXT:    std 3, -32(1)
+; CHECK-P7-BE-NEXT:    std 3, -24(1)
 ; CHECK-P7-BE-NEXT:    addis 3, 2, .LCPI1_0@toc@ha
 ; CHECK-P7-BE-NEXT:    addi 3, 3, .LCPI1_0@toc@l
 ; CHECK-P7-BE-NEXT:    lxvw4x 34, 0, 3
-; CHECK-P7-BE-NEXT:    addi 3, 1, -48
+; CHECK-P7-BE-NEXT:    addi 3, 1, -32
 ; CHECK-P7-BE-NEXT:    lxvw4x 35, 0, 3
 ; CHECK-P7-BE-NEXT:    vperm 2, 3, 4, 2
 ; CHECK-P7-BE-NEXT:    blr

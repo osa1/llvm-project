@@ -811,13 +811,10 @@ define <1 x i64> @sdiv_v1i64(<1 x i64> %op1, <1 x i64> %op2) {
 ;
 ; NONEON-NOSVE-LABEL: sdiv_v1i64:
 ; NONEON-NOSVE:       // %bb.0:
-; NONEON-NOSVE-NEXT:    sub sp, sp, #16
-; NONEON-NOSVE-NEXT:    .cfi_def_cfa_offset 16
 ; NONEON-NOSVE-NEXT:    fmov x8, d1
 ; NONEON-NOSVE-NEXT:    fmov x9, d0
 ; NONEON-NOSVE-NEXT:    sdiv x8, x9, x8
 ; NONEON-NOSVE-NEXT:    fmov d0, x8
-; NONEON-NOSVE-NEXT:    add sp, sp, #16
 ; NONEON-NOSVE-NEXT:    ret
   %res = sdiv <1 x i64> %op1, %op2
   ret <1 x i64> %res
@@ -1692,13 +1689,10 @@ define <1 x i64> @udiv_v1i64(<1 x i64> %op1, <1 x i64> %op2) {
 ;
 ; NONEON-NOSVE-LABEL: udiv_v1i64:
 ; NONEON-NOSVE:       // %bb.0:
-; NONEON-NOSVE-NEXT:    sub sp, sp, #16
-; NONEON-NOSVE-NEXT:    .cfi_def_cfa_offset 16
 ; NONEON-NOSVE-NEXT:    fmov x8, d1
 ; NONEON-NOSVE-NEXT:    fmov x9, d0
 ; NONEON-NOSVE-NEXT:    udiv x8, x9, x8
 ; NONEON-NOSVE-NEXT:    fmov d0, x8
-; NONEON-NOSVE-NEXT:    add sp, sp, #16
 ; NONEON-NOSVE-NEXT:    ret
   %res = udiv <1 x i64> %op1, %op2
   ret <1 x i64> %res

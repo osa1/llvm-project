@@ -2807,9 +2807,9 @@ define void @call_i8_2() {
 ;
 ; MIPS32R5EB-LABEL: call_i8_2:
 ; MIPS32R5EB:       # %bb.0: # %entry
-; MIPS32R5EB-NEXT:    addiu $sp, $sp, -32
-; MIPS32R5EB-NEXT:    .cfi_def_cfa_offset 32
-; MIPS32R5EB-NEXT:    sw $ra, 28($sp) # 4-byte Folded Spill
+; MIPS32R5EB-NEXT:    addiu $sp, $sp, -24
+; MIPS32R5EB-NEXT:    .cfi_def_cfa_offset 24
+; MIPS32R5EB-NEXT:    sw $ra, 20($sp) # 4-byte Folded Spill
 ; MIPS32R5EB-NEXT:    .cfi_offset 31, -4
 ; MIPS32R5EB-NEXT:    addiu $4, $zero, 1543
 ; MIPS32R5EB-NEXT:    addiu $5, $zero, 3080
@@ -2817,8 +2817,8 @@ define void @call_i8_2() {
 ; MIPS32R5EB-NEXT:    nop
 ; MIPS32R5EB-NEXT:    lui $1, %hi(gv2i8)
 ; MIPS32R5EB-NEXT:    sh $2, %lo(gv2i8)($1)
-; MIPS32R5EB-NEXT:    lw $ra, 28($sp) # 4-byte Folded Reload
-; MIPS32R5EB-NEXT:    addiu $sp, $sp, 32
+; MIPS32R5EB-NEXT:    lw $ra, 20($sp) # 4-byte Folded Reload
+; MIPS32R5EB-NEXT:    addiu $sp, $sp, 24
 ; MIPS32R5EB-NEXT:    jr $ra
 ; MIPS32R5EB-NEXT:    nop
 ;
@@ -2893,9 +2893,9 @@ define void @call_i8_2() {
 ;
 ; MIPS32R5EL-LABEL: call_i8_2:
 ; MIPS32R5EL:       # %bb.0: # %entry
-; MIPS32R5EL-NEXT:    addiu $sp, $sp, -32
-; MIPS32R5EL-NEXT:    .cfi_def_cfa_offset 32
-; MIPS32R5EL-NEXT:    sw $ra, 28($sp) # 4-byte Folded Spill
+; MIPS32R5EL-NEXT:    addiu $sp, $sp, -24
+; MIPS32R5EL-NEXT:    .cfi_def_cfa_offset 24
+; MIPS32R5EL-NEXT:    sw $ra, 20($sp) # 4-byte Folded Spill
 ; MIPS32R5EL-NEXT:    .cfi_offset 31, -4
 ; MIPS32R5EL-NEXT:    addiu $4, $zero, 1798
 ; MIPS32R5EL-NEXT:    addiu $5, $zero, 2060
@@ -2903,8 +2903,8 @@ define void @call_i8_2() {
 ; MIPS32R5EL-NEXT:    nop
 ; MIPS32R5EL-NEXT:    lui $1, %hi(gv2i8)
 ; MIPS32R5EL-NEXT:    sh $2, %lo(gv2i8)($1)
-; MIPS32R5EL-NEXT:    lw $ra, 28($sp) # 4-byte Folded Reload
-; MIPS32R5EL-NEXT:    addiu $sp, $sp, 32
+; MIPS32R5EL-NEXT:    lw $ra, 20($sp) # 4-byte Folded Reload
+; MIPS32R5EL-NEXT:    addiu $sp, $sp, 24
 ; MIPS32R5EL-NEXT:    jr $ra
 ; MIPS32R5EL-NEXT:    nop
 ;

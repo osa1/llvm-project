@@ -181,13 +181,13 @@ define i1 @fneg_bit63(ppc_fp128 nofpclass(nan ninf nsub nnorm nzero) %x) {
 ;
 ; BE32-LABEL: fneg_bit63:
 ; BE32:       # %bb.0: # %entry
-; BE32-NEXT:    stwu r1, -32(r1)
-; BE32-NEXT:    .cfi_def_cfa_offset 32
-; BE32-NEXT:    stfd f2, 16(r1)
-; BE32-NEXT:    lwz r3, 16(r1)
+; BE32-NEXT:    stwu r1, -16(r1)
+; BE32-NEXT:    .cfi_def_cfa_offset 16
+; BE32-NEXT:    stfd f2, 8(r1)
+; BE32-NEXT:    lwz r3, 8(r1)
 ; BE32-NEXT:    not r3, r3
 ; BE32-NEXT:    srwi r3, r3, 31
-; BE32-NEXT:    addi r1, r1, 32
+; BE32-NEXT:    addi r1, r1, 16
 ; BE32-NEXT:    blr
 entry:
   %neg = fneg ppc_fp128 %x
@@ -213,12 +213,12 @@ define i1 @fneg_fneg_msb(ppc_fp128 nofpclass(nan ninf nsub nnorm nzero) %x) {
 ;
 ; BE32-LABEL: fneg_fneg_msb:
 ; BE32:       # %bb.0: # %entry
-; BE32-NEXT:    stwu r1, -32(r1)
-; BE32-NEXT:    .cfi_def_cfa_offset 32
-; BE32-NEXT:    stfd f2, 16(r1)
-; BE32-NEXT:    lwz r3, 16(r1)
+; BE32-NEXT:    stwu r1, -16(r1)
+; BE32-NEXT:    .cfi_def_cfa_offset 16
+; BE32-NEXT:    stfd f2, 8(r1)
+; BE32-NEXT:    lwz r3, 8(r1)
 ; BE32-NEXT:    srwi r3, r3, 31
-; BE32-NEXT:    addi r1, r1, 32
+; BE32-NEXT:    addi r1, r1, 16
 ; BE32-NEXT:    blr
 entry:
   %neg = fneg ppc_fp128 %x

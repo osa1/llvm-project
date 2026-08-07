@@ -36,8 +36,6 @@ entry:
 define void @v3i8(ptr %p1) {
 ; CHECK-SD-LABEL: v3i8:
 ; CHECK-SD:       // %bb.0: // %entry
-; CHECK-SD-NEXT:    sub sp, sp, #16
-; CHECK-SD-NEXT:    .cfi_def_cfa_offset 16
 ; CHECK-SD-NEXT:    movi v0.4h, #8
 ; CHECK-SD-NEXT:    ldr s1, [x0]
 ; CHECK-SD-NEXT:    zip1 v1.8b, v1.8b, v0.8b
@@ -49,7 +47,6 @@ define void @v3i8(ptr %p1) {
 ; CHECK-SD-NEXT:    ushll v1.4s, v1.4h, #0
 ; CHECK-SD-NEXT:    stur b0, [x0, #2]
 ; CHECK-SD-NEXT:    str h1, [x0]
-; CHECK-SD-NEXT:    add sp, sp, #16
 ; CHECK-SD-NEXT:    ret
 ;
 ; CHECK-GI-LABEL: v3i8:

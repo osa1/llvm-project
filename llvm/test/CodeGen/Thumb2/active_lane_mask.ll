@@ -276,10 +276,10 @@ define void @test_width2(ptr nocapture readnone %x, ptr nocapture %y, i8 zeroext
 ; CHECK-LABEL: test_width2:
 ; CHECK:       @ %bb.0: @ %entry
 ; CHECK-NEXT:    push {r7, lr}
-; CHECK-NEXT:    sub sp, #4
 ; CHECK-NEXT:    cmp r2, #0
-; CHECK-NEXT:    beq .LBB5_3
-; CHECK-NEXT:  @ %bb.1: @ %for.body.preheader
+; CHECK-NEXT:    it eq
+; CHECK-NEXT:    popeq {r7, pc}
+; CHECK-NEXT:  .LBB5_1: @ %for.body.preheader
 ; CHECK-NEXT:    adds r0, r2, #1
 ; CHECK-NEXT:    movs r3, #1
 ; CHECK-NEXT:    and r0, r0, #510
@@ -326,8 +326,7 @@ define void @test_width2(ptr nocapture readnone %x, ptr nocapture %y, i8 zeroext
 ; CHECK-NEXT:    strmi r0, [r1, #4]
 ; CHECK-NEXT:    adds r1, #8
 ; CHECK-NEXT:    le lr, .LBB5_2
-; CHECK-NEXT:  .LBB5_3: @ %for.cond.cleanup
-; CHECK-NEXT:    add sp, #4
+; CHECK-NEXT:  @ %bb.3: @ %for.cond.cleanup
 ; CHECK-NEXT:    pop {r7, pc}
 entry:
   %cmp9.not = icmp eq i8 %m, 0

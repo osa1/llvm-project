@@ -423,11 +423,8 @@ define <1 x i64> @insertelement_v1i64(<1 x i64> %op1) {
 ;
 ; NONEON-NOSVE-LABEL: insertelement_v1i64:
 ; NONEON-NOSVE:       // %bb.0:
-; NONEON-NOSVE-NEXT:    sub sp, sp, #16
-; NONEON-NOSVE-NEXT:    .cfi_def_cfa_offset 16
 ; NONEON-NOSVE-NEXT:    mov w8, #5 // =0x5
 ; NONEON-NOSVE-NEXT:    fmov d0, x8
-; NONEON-NOSVE-NEXT:    add sp, sp, #16
 ; NONEON-NOSVE-NEXT:    ret
     %r = insertelement <1 x i64> %op1, i64 5, i64 0
     ret <1 x i64> %r
@@ -757,10 +754,7 @@ define <1 x double> @insertelement_v1f64(<1 x double> %op1) {
 ;
 ; NONEON-NOSVE-LABEL: insertelement_v1f64:
 ; NONEON-NOSVE:       // %bb.0:
-; NONEON-NOSVE-NEXT:    sub sp, sp, #16
-; NONEON-NOSVE-NEXT:    .cfi_def_cfa_offset 16
 ; NONEON-NOSVE-NEXT:    fmov d0, #5.00000000
-; NONEON-NOSVE-NEXT:    add sp, sp, #16
 ; NONEON-NOSVE-NEXT:    ret
     %r = insertelement <1 x double> %op1, double 5.0, i64 0
     ret <1 x double> %r

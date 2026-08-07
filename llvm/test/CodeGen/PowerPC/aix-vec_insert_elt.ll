@@ -325,12 +325,12 @@ define <4 x float> @testFloat2(<4 x float> %a, ptr %b, i32 zeroext %idx1, i32 ze
 ; CHECK-32-NEXT:    stxv 34, -16(1)
 ; CHECK-32-NEXT:    rlwinm 5, 5, 2, 28, 29
 ; CHECK-32-NEXT:    stwx 6, 7, 4
-; CHECK-32-NEXT:    addi 4, 1, -48
+; CHECK-32-NEXT:    addi 4, 1, -32
 ; CHECK-32-NEXT:    lxv 0, -16(1)
 ; CHECK-32-NEXT:    lwz 3, 1(3)
-; CHECK-32-NEXT:    stxv 0, -48(1)
+; CHECK-32-NEXT:    stxv 0, -32(1)
 ; CHECK-32-NEXT:    stwx 3, 4, 5
-; CHECK-32-NEXT:    lxv 34, -48(1)
+; CHECK-32-NEXT:    lxv 34, -32(1)
 ; CHECK-32-NEXT:    blr
 ;
 ; CHECK-64-P10-LABEL: testFloat2:
@@ -390,12 +390,12 @@ define <4 x float> @testFloat3(<4 x float> %a, ptr %b, i32 zeroext %idx1, i32 ze
 ; CHECK-32-NEXT:    lwzx 6, 3, 6
 ; CHECK-32-NEXT:    stxv 34, -16(1)
 ; CHECK-32-NEXT:    stwx 6, 7, 4
-; CHECK-32-NEXT:    addi 4, 1, -48
+; CHECK-32-NEXT:    addi 4, 1, -32
 ; CHECK-32-NEXT:    lxv 0, -16(1)
 ; CHECK-32-NEXT:    lwz 3, 0(3)
-; CHECK-32-NEXT:    stxv 0, -48(1)
+; CHECK-32-NEXT:    stxv 0, -32(1)
 ; CHECK-32-NEXT:    stwx 3, 4, 5
-; CHECK-32-NEXT:    lxv 34, -48(1)
+; CHECK-32-NEXT:    lxv 34, -32(1)
 ; CHECK-32-NEXT:    blr
 ;
 ; CHECK-64-P10-LABEL: testFloat3:

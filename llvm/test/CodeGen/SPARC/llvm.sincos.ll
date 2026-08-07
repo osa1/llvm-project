@@ -225,40 +225,40 @@ define half @test_sincos_f16_only_use_cos(half %a) #0 {
 define { <2 x half>, <2 x half> } @test_sincos_v2f16(<2 x half> %a) #0 {
 ; SPARC32-LABEL: test_sincos_v2f16:
 ; SPARC32:       ! %bb.0:
-; SPARC32-NEXT:    save %sp, -128, %sp
+; SPARC32-NEXT:    save %sp, -120, %sp
 ; SPARC32-NEXT:    call __extendhfsf2
 ; SPARC32-NEXT:    mov %i1, %o0
-; SPARC32-NEXT:    st %f0, [%fp+-28]
-; SPARC32-NEXT:    call __extendhfsf2
-; SPARC32-NEXT:    mov %i0, %o0
-; SPARC32-NEXT:    st %f0, [%fp+-32]
-; SPARC32-NEXT:    ld [%fp+-28], %i0
-; SPARC32-NEXT:    call cosf
-; SPARC32-NEXT:    mov %i0, %o0
 ; SPARC32-NEXT:    st %f0, [%fp+-20]
-; SPARC32-NEXT:    ld [%fp+-32], %i1
-; SPARC32-NEXT:    call cosf
-; SPARC32-NEXT:    mov %i1, %o0
-; SPARC32-NEXT:    st %f0, [%fp+-12]
-; SPARC32-NEXT:    call sinf
+; SPARC32-NEXT:    call __extendhfsf2
 ; SPARC32-NEXT:    mov %i0, %o0
 ; SPARC32-NEXT:    st %f0, [%fp+-24]
+; SPARC32-NEXT:    ld [%fp+-20], %i0
+; SPARC32-NEXT:    call cosf
+; SPARC32-NEXT:    mov %i0, %o0
+; SPARC32-NEXT:    st %f0, [%fp+-12]
+; SPARC32-NEXT:    ld [%fp+-24], %i1
+; SPARC32-NEXT:    call cosf
+; SPARC32-NEXT:    mov %i1, %o0
+; SPARC32-NEXT:    st %f0, [%fp+-4]
+; SPARC32-NEXT:    call sinf
+; SPARC32-NEXT:    mov %i0, %o0
+; SPARC32-NEXT:    st %f0, [%fp+-16]
 ; SPARC32-NEXT:    call sinf
 ; SPARC32-NEXT:    mov %i1, %o0
-; SPARC32-NEXT:    st %f0, [%fp+-16]
+; SPARC32-NEXT:    st %f0, [%fp+-8]
 ; SPARC32-NEXT:    call __truncsfhf2
-; SPARC32-NEXT:    ld [%fp+-20], %o0
+; SPARC32-NEXT:    ld [%fp+-12], %o0
 ; SPARC32-NEXT:    sethi 63, %i0
 ; SPARC32-NEXT:    or %i0, 1023, %i0
 ; SPARC32-NEXT:    and %o0, %i0, %i4
 ; SPARC32-NEXT:    call __truncsfhf2
-; SPARC32-NEXT:    ld [%fp+-12], %o0
+; SPARC32-NEXT:    ld [%fp+-4], %o0
 ; SPARC32-NEXT:    and %o0, %i0, %i2
 ; SPARC32-NEXT:    call __truncsfhf2
-; SPARC32-NEXT:    ld [%fp+-24], %o0
+; SPARC32-NEXT:    ld [%fp+-16], %o0
 ; SPARC32-NEXT:    and %o0, %i0, %i1
 ; SPARC32-NEXT:    call __truncsfhf2
-; SPARC32-NEXT:    ld [%fp+-16], %o0
+; SPARC32-NEXT:    ld [%fp+-8], %o0
 ; SPARC32-NEXT:    and %o0, %i0, %g2
 ; SPARC32-NEXT:    mov %g2, %i0
 ; SPARC32-NEXT:    ! kill: def $i2 killed $i2 killed $i2_i3
@@ -304,42 +304,42 @@ define { <2 x half>, <2 x half> } @test_sincos_v2f16(<2 x half> %a) #0 {
 ;
 ; GNU32-LABEL: test_sincos_v2f16:
 ; GNU32:       ! %bb.0:
-; GNU32-NEXT:    save %sp, -144, %sp
+; GNU32-NEXT:    save %sp, -136, %sp
 ; GNU32-NEXT:    call __extendhfsf2
 ; GNU32-NEXT:    mov %i1, %o0
-; GNU32-NEXT:    st %f0, [%fp+-32]
-; GNU32-NEXT:    ld [%fp+-32], %o0
+; GNU32-NEXT:    st %f0, [%fp+-24]
+; GNU32-NEXT:    ld [%fp+-24], %o0
+; GNU32-NEXT:    add %fp, -4, %o1
+; GNU32-NEXT:    call sincosf
+; GNU32-NEXT:    add %fp, -8, %o2
+; GNU32-NEXT:    call __extendhfsf2
+; GNU32-NEXT:    mov %i0, %o0
+; GNU32-NEXT:    st %f0, [%fp+-20]
+; GNU32-NEXT:    ld [%fp+-20], %o0
 ; GNU32-NEXT:    add %fp, -12, %o1
 ; GNU32-NEXT:    call sincosf
 ; GNU32-NEXT:    add %fp, -16, %o2
-; GNU32-NEXT:    call __extendhfsf2
-; GNU32-NEXT:    mov %i0, %o0
-; GNU32-NEXT:    st %f0, [%fp+-28]
-; GNU32-NEXT:    ld [%fp+-28], %o0
-; GNU32-NEXT:    add %fp, -20, %o1
-; GNU32-NEXT:    call sincosf
-; GNU32-NEXT:    add %fp, -24, %o2
-; GNU32-NEXT:    ld [%fp+-16], %f0
-; GNU32-NEXT:    st %f0, [%fp+-44]
-; GNU32-NEXT:    ld [%fp+-24], %f0
+; GNU32-NEXT:    ld [%fp+-8], %f0
 ; GNU32-NEXT:    st %f0, [%fp+-36]
-; GNU32-NEXT:    ld [%fp+-12], %f0
-; GNU32-NEXT:    st %f0, [%fp+-48]
-; GNU32-NEXT:    ld [%fp+-20], %f0
+; GNU32-NEXT:    ld [%fp+-16], %f0
+; GNU32-NEXT:    st %f0, [%fp+-28]
+; GNU32-NEXT:    ld [%fp+-4], %f0
 ; GNU32-NEXT:    st %f0, [%fp+-40]
+; GNU32-NEXT:    ld [%fp+-12], %f0
+; GNU32-NEXT:    st %f0, [%fp+-32]
 ; GNU32-NEXT:    call __truncsfhf2
-; GNU32-NEXT:    ld [%fp+-44], %o0
+; GNU32-NEXT:    ld [%fp+-36], %o0
 ; GNU32-NEXT:    sethi 63, %i0
 ; GNU32-NEXT:    or %i0, 1023, %i0
 ; GNU32-NEXT:    and %o0, %i0, %i4
 ; GNU32-NEXT:    call __truncsfhf2
-; GNU32-NEXT:    ld [%fp+-36], %o0
+; GNU32-NEXT:    ld [%fp+-28], %o0
 ; GNU32-NEXT:    and %o0, %i0, %i2
 ; GNU32-NEXT:    call __truncsfhf2
-; GNU32-NEXT:    ld [%fp+-48], %o0
+; GNU32-NEXT:    ld [%fp+-40], %o0
 ; GNU32-NEXT:    and %o0, %i0, %i1
 ; GNU32-NEXT:    call __truncsfhf2
-; GNU32-NEXT:    ld [%fp+-40], %o0
+; GNU32-NEXT:    ld [%fp+-32], %o0
 ; GNU32-NEXT:    and %o0, %i0, %g2
 ; GNU32-NEXT:    mov %g2, %i0
 ; GNU32-NEXT:    ! kill: def $i2 killed $i2 killed $i2_i3

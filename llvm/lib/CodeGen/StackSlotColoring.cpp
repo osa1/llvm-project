@@ -59,6 +59,8 @@ static cl::opt<int> DCELimit("ssc-dce-limit", cl::init(-1), cl::Hidden);
 
 STATISTIC(NumEliminated, "Number of stack slots eliminated due to coloring");
 STATISTIC(NumDead,       "Number of trivially dead stack accesses eliminated");
+STATISTIC(NumUnreferenced,
+          "Number of unreferenced temporary stack objects removed");
 
 namespace {
 
@@ -150,7 +152,9 @@ public:
 
 private:
   void InitializeSlots();
-  void ScanForSpillSlotRefs(MachineFunction &MF);
+  void ScanForSpillSlotRefs(MachineFunction &MF, BitVector &Used);
+  bool RemoveUnreferencedTemporaryStackObjects(MachineFunction &MF,
+                                               const BitVector &Used);
   int ColorSlot(LiveInterval *li);
   bool ColorSlots(MachineFunction &MF);
   void RewriteInstruction(MachineInstr &MI, SmallVectorImpl<int> &SlotMapping,
@@ -212,8 +216,13 @@ struct IntervalSorter {
 
 /// ScanForSpillSlotRefs - Scan all the machine instructions for spill slot
 /// references and update spill slot weights.
-void StackSlotColoring::ScanForSpillSlotRefs(MachineFunction &MF) {
+///
+/// Also mark used stack slots referenced by the instructions, in \p Used.
+void StackSlotColoring::ScanForSpillSlotRefs(MachineFunction &MF,
+                                             BitVector &Used) {
   SSRefs.resize(MFI->getObjectIndexEnd());
+
+  int Begin = MFI->getObjectIndexBegin();
 
   // FIXME: Need the equivalent of MachineRegisterInfo for frameindex operands.
   for (MachineBasicBlock &MBB : MF) {
@@ -222,6 +231,7 @@ void StackSlotColoring::ScanForSpillSlotRefs(MachineFunction &MF) {
         if (!MO.isFI())
           continue;
         int FI = MO.getIndex();
+        Used.set(FI - Begin);
         if (FI < 0)
           continue;
         if (!LS->hasInterval(FI))
@@ -236,12 +246,35 @@ void StackSlotColoring::ScanForSpillSlotRefs(MachineFunction &MF) {
                 dyn_cast_or_null<FixedStackPseudoSourceValue>(
                     MMO->getPseudoValue())) {
           int FI = FSV->getFrameIndex();
+          Used.set(FI - Begin);
           if (FI >= 0)
             SSRefs[FI].push_back(MMO);
         }
       }
     }
   }
+}
+
+bool StackSlotColoring::RemoveUnreferencedTemporaryStackObjects(
+    MachineFunction &MF, const BitVector &Used) {
+  int Begin = MFI->getObjectIndexBegin();
+  int End = MFI->getObjectIndexEnd();
+
+  bool Changed = false;
+  for (int FI = 0; FI < End; ++FI) {
+    if (!MFI->isTemporaryObjectIndex(FI))
+      continue;
+
+    if (Used.test(FI - Begin))
+      continue;
+
+    LLVM_DEBUG(dbgs() << "Removing unreferenced stack object fi#" << FI
+                      << " (size=" << MFI->getObjectSize(FI) << ")\n");
+    MFI->RemoveStackObject(FI);
+    ++NumUnreferenced;
+    Changed = true;
+  }
+  return Changed;
 }
 
 /// InitializeSlots - Process all spill stack slot liveintervals and add them
@@ -532,21 +565,22 @@ bool StackSlotColoring::run(MachineFunction &MF) {
 
   bool Changed = false;
 
+  BitVector Used(MFI->getObjectIndexEnd() - MFI->getObjectIndexBegin());
+  ScanForSpillSlotRefs(MF, Used);
+  Changed |= RemoveUnreferencedTemporaryStackObjects(MF, Used);
+
   unsigned NumSlots = LS->getNumIntervals();
   if (NumSlots == 0)
-    // Nothing to do!
-    return false;
+    return Changed;
 
   // If there are calls to setjmp or sigsetjmp, don't perform stack slot
   // coloring. The stack could be modified before the longjmp is executed,
   // resulting in the wrong value being used afterwards.
   if (MF.exposesReturnsTwice())
-    return false;
+    return Changed;
 
-  // Gather spill slot references
-  ScanForSpillSlotRefs(MF);
   InitializeSlots();
-  Changed = ColorSlots(MF);
+  Changed |= ColorSlots(MF);
 
   for (int &Next : NextColors)
     Next = -1;

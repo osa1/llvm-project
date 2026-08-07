@@ -150,7 +150,6 @@ define void @set_fpenv_03(ptr %ptr1, ptr %ptr2) #0 {
 ; X64-NEXT:    pushq %r13
 ; X64-NEXT:    pushq %r12
 ; X64-NEXT:    pushq %rbx
-; X64-NEXT:    subq $32, %rsp
 ; X64-NEXT:    movq %rsi, %rbx
 ; X64-NEXT:    movq (%rdi), %r14
 ; X64-NEXT:    movq 8(%rdi), %r15
@@ -161,7 +160,6 @@ define void @set_fpenv_03(ptr %ptr1, ptr %ptr2) #0 {
 ; X64-NEXT:    movq %r12, 16(%rbx)
 ; X64-NEXT:    movq %r15, 8(%rbx)
 ; X64-NEXT:    movq %r14, (%rbx)
-; X64-NEXT:    addq $32, %rsp
 ; X64-NEXT:    popq %rbx
 ; X64-NEXT:    popq %r12
 ; X64-NEXT:    popq %r13

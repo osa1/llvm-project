@@ -4,7 +4,6 @@
 define <16 x i4> @avir_v2i4_v16i4(<2 x i4> %arg) nounwind {
 ; CHECK-LABEL: avir_v2i4_v16i4:
 ; CHECK:       // %bb.0:
-; CHECK-NEXT:    sub sp, sp, #16
 ; CHECK-NEXT:    uzp1 v1.4h, v0.4h, v0.4h
 ; CHECK-NEXT:    movi v0.2d, #0000000000000000
 ; CHECK-NEXT:    fmov x8, d1
@@ -38,7 +37,6 @@ define <16 x i4> @avir_v2i4_v16i4(<2 x i4> %arg) nounwind {
 ; CHECK-NEXT:    lsr x8, x8, #60
 ; CHECK-NEXT:    mov v0.b[14], w9
 ; CHECK-NEXT:    mov v0.b[15], w8
-; CHECK-NEXT:    add sp, sp, #16
 ; CHECK-NEXT:    ret
   %res = shufflevector <2 x i4> %arg, <2 x i4> poison,
   <16 x i32> <i32 poison, i32 poison, i32 poison, i32 poison, i32 1     , i32 poison, i32 poison, i32 poison,

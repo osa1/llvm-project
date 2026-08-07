@@ -5,8 +5,6 @@
 define arm_aapcs_vfpcc <4 x i32> @bitcast_to_v4i1(i4 %b, <4 x i32> %a) {
 ; CHECK-LE-LABEL: bitcast_to_v4i1:
 ; CHECK-LE:       @ %bb.0: @ %entry
-; CHECK-LE-NEXT:    .pad #4
-; CHECK-LE-NEXT:    sub sp, #4
 ; CHECK-LE-NEXT:    and r0, r0, #15
 ; CHECK-LE-NEXT:    vmov.i8 q1, #0x0
 ; CHECK-LE-NEXT:    vmov.i8 q2, #0xff
@@ -21,13 +19,10 @@ define arm_aapcs_vfpcc <4 x i32> @bitcast_to_v4i1(i4 %b, <4 x i32> %a) {
 ; CHECK-LE-NEXT:    vmov q2[3], q2[1], r1, r0
 ; CHECK-LE-NEXT:    vcmp.i32 ne, q2, zr
 ; CHECK-LE-NEXT:    vpsel q0, q0, q1
-; CHECK-LE-NEXT:    add sp, #4
 ; CHECK-LE-NEXT:    bx lr
 ;
 ; CHECK-BE-LABEL: bitcast_to_v4i1:
 ; CHECK-BE:       @ %bb.0: @ %entry
-; CHECK-BE-NEXT:    .pad #4
-; CHECK-BE-NEXT:    sub sp, #4
 ; CHECK-BE-NEXT:    rbit r0, r0
 ; CHECK-BE-NEXT:    vmov.i8 q1, #0x0
 ; CHECK-BE-NEXT:    vmov.i8 q2, #0xff
@@ -45,7 +40,6 @@ define arm_aapcs_vfpcc <4 x i32> @bitcast_to_v4i1(i4 %b, <4 x i32> %a) {
 ; CHECK-BE-NEXT:    vcmp.i32 ne, q2, zr
 ; CHECK-BE-NEXT:    vpsel q1, q1, q0
 ; CHECK-BE-NEXT:    vrev64.32 q0, q1
-; CHECK-BE-NEXT:    add sp, #4
 ; CHECK-BE-NEXT:    bx lr
 entry:
   %c = bitcast i4 %b to <4 x i1>
@@ -56,8 +50,6 @@ entry:
 define arm_aapcs_vfpcc <8 x i16> @bitcast_to_v8i1(i8 %b, <8 x i16> %a) {
 ; CHECK-LE-LABEL: bitcast_to_v8i1:
 ; CHECK-LE:       @ %bb.0: @ %entry
-; CHECK-LE-NEXT:    .pad #4
-; CHECK-LE-NEXT:    sub sp, #4
 ; CHECK-LE-NEXT:    uxtb r0, r0
 ; CHECK-LE-NEXT:    vmov.i8 q1, #0x0
 ; CHECK-LE-NEXT:    vmov.i8 q2, #0xff
@@ -82,13 +74,10 @@ define arm_aapcs_vfpcc <8 x i16> @bitcast_to_v8i1(i8 %b, <8 x i16> %a) {
 ; CHECK-LE-NEXT:    vcmp.i16 ne, q1, zr
 ; CHECK-LE-NEXT:    vmov.i32 q1, #0x0
 ; CHECK-LE-NEXT:    vpsel q0, q0, q1
-; CHECK-LE-NEXT:    add sp, #4
 ; CHECK-LE-NEXT:    bx lr
 ;
 ; CHECK-BE-LABEL: bitcast_to_v8i1:
 ; CHECK-BE:       @ %bb.0: @ %entry
-; CHECK-BE-NEXT:    .pad #4
-; CHECK-BE-NEXT:    sub sp, #4
 ; CHECK-BE-NEXT:    uxtb r0, r0
 ; CHECK-BE-NEXT:    vmov.i8 q1, #0x0
 ; CHECK-BE-NEXT:    rbit r0, r0
@@ -117,7 +106,6 @@ define arm_aapcs_vfpcc <8 x i16> @bitcast_to_v8i1(i8 %b, <8 x i16> %a) {
 ; CHECK-BE-NEXT:    vmov.i32 q0, #0x0
 ; CHECK-BE-NEXT:    vpsel q1, q1, q0
 ; CHECK-BE-NEXT:    vrev64.16 q0, q1
-; CHECK-BE-NEXT:    add sp, #4
 ; CHECK-BE-NEXT:    bx lr
 entry:
   %c = bitcast i8 %b to <8 x i1>
@@ -128,18 +116,13 @@ entry:
 define arm_aapcs_vfpcc <16 x i8> @bitcast_to_v16i1(i16 %b, <16 x i8> %a) {
 ; CHECK-LE-LABEL: bitcast_to_v16i1:
 ; CHECK-LE:       @ %bb.0: @ %entry
-; CHECK-LE-NEXT:    .pad #4
-; CHECK-LE-NEXT:    sub sp, #4
 ; CHECK-LE-NEXT:    vmsr p0, r0
 ; CHECK-LE-NEXT:    vmov.i32 q1, #0x0
 ; CHECK-LE-NEXT:    vpsel q0, q0, q1
-; CHECK-LE-NEXT:    add sp, #4
 ; CHECK-LE-NEXT:    bx lr
 ;
 ; CHECK-BE-LABEL: bitcast_to_v16i1:
 ; CHECK-BE:       @ %bb.0: @ %entry
-; CHECK-BE-NEXT:    .pad #4
-; CHECK-BE-NEXT:    sub sp, #4
 ; CHECK-BE-NEXT:    uxth r0, r0
 ; CHECK-BE-NEXT:    vrev64.8 q1, q0
 ; CHECK-BE-NEXT:    rbit r0, r0
@@ -148,7 +131,6 @@ define arm_aapcs_vfpcc <16 x i8> @bitcast_to_v16i1(i16 %b, <16 x i8> %a) {
 ; CHECK-BE-NEXT:    vmsr p0, r0
 ; CHECK-BE-NEXT:    vpsel q1, q1, q0
 ; CHECK-BE-NEXT:    vrev64.8 q0, q1
-; CHECK-BE-NEXT:    add sp, #4
 ; CHECK-BE-NEXT:    bx lr
 entry:
   %c = bitcast i16 %b to <16 x i1>
@@ -159,8 +141,6 @@ entry:
 define arm_aapcs_vfpcc <2 x i64> @bitcast_to_v2i1(i2 %b, <2 x i64> %a) {
 ; CHECK-LE-LABEL: bitcast_to_v2i1:
 ; CHECK-LE:       @ %bb.0: @ %entry
-; CHECK-LE-NEXT:    .pad #4
-; CHECK-LE-NEXT:    sub sp, #4
 ; CHECK-LE-NEXT:    and r0, r0, #3
 ; CHECK-LE-NEXT:    vmov.i8 q1, #0x0
 ; CHECK-LE-NEXT:    vmov.i8 q2, #0xff
@@ -173,13 +153,10 @@ define arm_aapcs_vfpcc <2 x i64> @bitcast_to_v2i1(i2 %b, <2 x i64> %a) {
 ; CHECK-LE-NEXT:    vcmp.i32 ne, q1, zr
 ; CHECK-LE-NEXT:    vmov.i32 q1, #0x0
 ; CHECK-LE-NEXT:    vpsel q0, q0, q1
-; CHECK-LE-NEXT:    add sp, #4
 ; CHECK-LE-NEXT:    bx lr
 ;
 ; CHECK-BE-LABEL: bitcast_to_v2i1:
 ; CHECK-BE:       @ %bb.0: @ %entry
-; CHECK-BE-NEXT:    .pad #4
-; CHECK-BE-NEXT:    sub sp, #4
 ; CHECK-BE-NEXT:    rbit r0, r0
 ; CHECK-BE-NEXT:    vmov.i8 q1, #0x0
 ; CHECK-BE-NEXT:    vmov.i8 q2, #0xff
@@ -193,7 +170,6 @@ define arm_aapcs_vfpcc <2 x i64> @bitcast_to_v2i1(i2 %b, <2 x i64> %a) {
 ; CHECK-BE-NEXT:    vcmp.i32 ne, q1, zr
 ; CHECK-BE-NEXT:    vmov.i32 q1, #0x0
 ; CHECK-BE-NEXT:    vpsel q0, q0, q1
-; CHECK-BE-NEXT:    add sp, #4
 ; CHECK-BE-NEXT:    bx lr
 entry:
   %c = bitcast i2 %b to <2 x i1>
@@ -205,8 +181,6 @@ entry:
 define arm_aapcs_vfpcc i4 @bitcast_from_v4i1(<4 x i32> %a) {
 ; CHECK-LE-LABEL: bitcast_from_v4i1:
 ; CHECK-LE:       @ %bb.0: @ %entry
-; CHECK-LE-NEXT:    .pad #4
-; CHECK-LE-NEXT:    sub sp, #4
 ; CHECK-LE-NEXT:    vcmp.i32 eq, q0, zr
 ; CHECK-LE-NEXT:    vmrs r1, p0
 ; CHECK-LE-NEXT:    and r0, r1, #1
@@ -222,13 +196,10 @@ define arm_aapcs_vfpcc i4 @bitcast_from_v4i1(<4 x i32> %a) {
 ; CHECK-LE-NEXT:    bfi r0, r2, #2, #1
 ; CHECK-LE-NEXT:    rsbs r1, r1, #0
 ; CHECK-LE-NEXT:    bfi r0, r1, #3, #1
-; CHECK-LE-NEXT:    add sp, #4
 ; CHECK-LE-NEXT:    bx lr
 ;
 ; CHECK-BE-LABEL: bitcast_from_v4i1:
 ; CHECK-BE:       @ %bb.0: @ %entry
-; CHECK-BE-NEXT:    .pad #4
-; CHECK-BE-NEXT:    sub sp, #4
 ; CHECK-BE-NEXT:    vrev64.32 q1, q0
 ; CHECK-BE-NEXT:    vcmp.i32 eq, q1, zr
 ; CHECK-BE-NEXT:    vmrs r1, p0
@@ -245,7 +216,6 @@ define arm_aapcs_vfpcc i4 @bitcast_from_v4i1(<4 x i32> %a) {
 ; CHECK-BE-NEXT:    bfi r0, r2, #2, #1
 ; CHECK-BE-NEXT:    rsbs r1, r1, #0
 ; CHECK-BE-NEXT:    bfi r0, r1, #3, #1
-; CHECK-BE-NEXT:    add sp, #4
 ; CHECK-BE-NEXT:    bx lr
 entry:
   %c = icmp eq <4 x i32> %a, zeroinitializer
@@ -256,8 +226,6 @@ entry:
 define arm_aapcs_vfpcc i8 @bitcast_from_v8i1(<8 x i16> %a) {
 ; CHECK-LE-LABEL: bitcast_from_v8i1:
 ; CHECK-LE:       @ %bb.0: @ %entry
-; CHECK-LE-NEXT:    .pad #4
-; CHECK-LE-NEXT:    sub sp, #4
 ; CHECK-LE-NEXT:    vcmp.i16 eq, q0, zr
 ; CHECK-LE-NEXT:    vmrs r1, p0
 ; CHECK-LE-NEXT:    and r0, r1, #1
@@ -286,13 +254,10 @@ define arm_aapcs_vfpcc i8 @bitcast_from_v8i1(<8 x i16> %a) {
 ; CHECK-LE-NEXT:    rsbs r1, r1, #0
 ; CHECK-LE-NEXT:    bfi r0, r1, #7, #1
 ; CHECK-LE-NEXT:    uxtb r0, r0
-; CHECK-LE-NEXT:    add sp, #4
 ; CHECK-LE-NEXT:    bx lr
 ;
 ; CHECK-BE-LABEL: bitcast_from_v8i1:
 ; CHECK-BE:       @ %bb.0: @ %entry
-; CHECK-BE-NEXT:    .pad #4
-; CHECK-BE-NEXT:    sub sp, #4
 ; CHECK-BE-NEXT:    vrev64.16 q1, q0
 ; CHECK-BE-NEXT:    vcmp.i16 eq, q1, zr
 ; CHECK-BE-NEXT:    vmrs r1, p0
@@ -322,7 +287,6 @@ define arm_aapcs_vfpcc i8 @bitcast_from_v8i1(<8 x i16> %a) {
 ; CHECK-BE-NEXT:    rsbs r1, r1, #0
 ; CHECK-BE-NEXT:    bfi r0, r1, #7, #1
 ; CHECK-BE-NEXT:    uxtb r0, r0
-; CHECK-BE-NEXT:    add sp, #4
 ; CHECK-BE-NEXT:    bx lr
 entry:
   %c = icmp eq <8 x i16> %a, zeroinitializer
@@ -333,24 +297,18 @@ entry:
 define arm_aapcs_vfpcc i16 @bitcast_from_v16i1(<16 x i8> %a) {
 ; CHECK-LE-LABEL: bitcast_from_v16i1:
 ; CHECK-LE:       @ %bb.0: @ %entry
-; CHECK-LE-NEXT:    .pad #4
-; CHECK-LE-NEXT:    sub sp, #4
 ; CHECK-LE-NEXT:    vcmp.i8 eq, q0, zr
 ; CHECK-LE-NEXT:    vmrs r0, p0
 ; CHECK-LE-NEXT:    uxth r0, r0
-; CHECK-LE-NEXT:    add sp, #4
 ; CHECK-LE-NEXT:    bx lr
 ;
 ; CHECK-BE-LABEL: bitcast_from_v16i1:
 ; CHECK-BE:       @ %bb.0: @ %entry
-; CHECK-BE-NEXT:    .pad #4
-; CHECK-BE-NEXT:    sub sp, #4
 ; CHECK-BE-NEXT:    vrev64.8 q1, q0
 ; CHECK-BE-NEXT:    vcmp.i8 eq, q1, zr
 ; CHECK-BE-NEXT:    vmrs r0, p0
 ; CHECK-BE-NEXT:    rbit r0, r0
 ; CHECK-BE-NEXT:    lsrs r0, r0, #16
-; CHECK-BE-NEXT:    add sp, #4
 ; CHECK-BE-NEXT:    bx lr
 entry:
   %c = icmp eq <16 x i8> %a, zeroinitializer
@@ -361,8 +319,6 @@ entry:
 define arm_aapcs_vfpcc i2 @bitcast_from_v2i1(<2 x i64> %a) {
 ; CHECK-LE-LABEL: bitcast_from_v2i1:
 ; CHECK-LE:       @ %bb.0: @ %entry
-; CHECK-LE-NEXT:    .pad #4
-; CHECK-LE-NEXT:    sub sp, #4
 ; CHECK-LE-NEXT:    vmov r0, r1, d0
 ; CHECK-LE-NEXT:    orrs r0, r1
 ; CHECK-LE-NEXT:    csetm r1, eq
@@ -372,13 +328,10 @@ define arm_aapcs_vfpcc i2 @bitcast_from_v2i1(<2 x i64> %a) {
 ; CHECK-LE-NEXT:    orrs r1, r2
 ; CHECK-LE-NEXT:    csetm r1, eq
 ; CHECK-LE-NEXT:    bfi r0, r1, #1, #1
-; CHECK-LE-NEXT:    add sp, #4
 ; CHECK-LE-NEXT:    bx lr
 ;
 ; CHECK-BE-LABEL: bitcast_from_v2i1:
 ; CHECK-BE:       @ %bb.0: @ %entry
-; CHECK-BE-NEXT:    .pad #4
-; CHECK-BE-NEXT:    sub sp, #4
 ; CHECK-BE-NEXT:    vrev64.32 q1, q0
 ; CHECK-BE-NEXT:    vmov r0, r1, d3
 ; CHECK-BE-NEXT:    orrs r0, r1
@@ -389,7 +342,6 @@ define arm_aapcs_vfpcc i2 @bitcast_from_v2i1(<2 x i64> %a) {
 ; CHECK-BE-NEXT:    orrs r1, r2
 ; CHECK-BE-NEXT:    csetm r1, eq
 ; CHECK-BE-NEXT:    bfi r0, r1, #1, #1
-; CHECK-BE-NEXT:    add sp, #4
 ; CHECK-BE-NEXT:    bx lr
 entry:
   %c = icmp eq <2 x i64> %a, zeroinitializer

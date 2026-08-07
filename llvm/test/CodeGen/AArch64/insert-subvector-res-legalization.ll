@@ -206,12 +206,8 @@ define <vscale x 2 x i32> @vec_scalable_subvec_fixed_idx_nonzero_i32(ptr %a, ptr
 define <vscale x 2 x i32> @vec_scalable_subvec_fixed_idx_nonzero_large_i32(ptr %a, ptr %b) #1 {
 ; CHECK-LABEL: vec_scalable_subvec_fixed_idx_nonzero_large_i32:
 ; CHECK:       // %bb.0:
-; CHECK-NEXT:    str x29, [sp, #-16]! // 8-byte Folded Spill
-; CHECK-NEXT:    addvl sp, sp, #-1
 ; CHECK-NEXT:    ptrue p0.d
 ; CHECK-NEXT:    ld1w { z0.d }, p0/z, [x1]
-; CHECK-NEXT:    addvl sp, sp, #1
-; CHECK-NEXT:    ldr x29, [sp], #16 // 8-byte Folded Reload
 ; CHECK-NEXT:    ret
   %vec = load <vscale x 2 x i32>, ptr %a
   %subvec = load <8 x i32>, ptr %b

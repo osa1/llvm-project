@@ -51,11 +51,12 @@ static inline Align clampStackAlignment(bool ShouldClamp, Align Alignment,
 int MachineFrameInfo::CreateStackObject(uint64_t Size, Align Alignment,
                                         bool IsSpillSlot,
                                         const AllocaInst *Alloca,
-                                        uint8_t StackID) {
+                                        uint8_t StackID,
+                                        bool IsTemporary) {
   assert(Size != 0 && "Cannot allocate zero size stack objects!");
   Alignment = clampStackAlignment(!StackRealignable, Alignment, StackAlignment);
   Objects.push_back(StackObject(Size, Alignment, 0, false, IsSpillSlot, Alloca,
-                                !IsSpillSlot, StackID));
+                                !IsSpillSlot, StackID, IsTemporary));
   int Index = (int)Objects.size() - NumFixedObjects - 1;
   assert(Index >= 0 && "Bad frame index!");
   if (contributesToMaxAlignment(StackID))
