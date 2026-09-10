@@ -25,6 +25,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "AggressiveInstCombineInternal.h"
+#include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/Statistic.h"
 #include "llvm/Analysis/ConstantFolding.h"
@@ -32,6 +33,8 @@
 #include "llvm/IR/Dominators.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instruction.h"
+#include "llvm/Support/Debug.h"
+#include "llvm/Support/FormatVariadic.h"
 #include "llvm/Support/KnownBits.h"
 
 using namespace llvm;
@@ -75,8 +78,20 @@ static bool isRelevantOperand(const Instruction *I, unsigned OpNo) {
     return true;
   case Instruction::ShuffleVector:
     return true;
-  default:
+  default: {
+    if (const IntrinsicInst *II = dyn_cast<IntrinsicInst>(I)) {
+      switch (II->getIntrinsicID()) {
+      case Intrinsic::umin:
+      case Intrinsic::umax: {
+        return OpNo < 2;
+      }
+      default: {
+        llvm_unreachable("Unreachable!");
+      }
+      }
+    }
     llvm_unreachable("Unreachable!");
+  }
   }
 }
 
@@ -87,6 +102,97 @@ static void getRelevantOperands(Instruction *I, SmallVectorImpl<Value *> &Ops) {
     if (isRelevantOperand(I, Op.getOperandNo()))
       Ops.push_back(Op.get());
 }
+
+#if !defined(NDEBUG) || defined(LLVM_ENABLE_DUMP)
+
+/// Print \p I the way it appears in a .ll file, but without the leading
+/// indentation that Instruction::print() emits.
+static std::string toStringNoIndent(const Instruction *I) {
+  std::string S;
+  raw_string_ostream RS(S);
+  I->print(RS);
+  return StringRef(S).ltrim().str();
+}
+
+void TruncInstCombine::printGraph(raw_ostream &OS, StringRef Title) const {
+  OS << "=== TruncInstCombine graph";
+  if (!Title.empty())
+    OS << " [" << Title << "]";
+  OS << " ===\n";
+
+  if (CurrentTruncInst)
+    OS << "  rooted at: " << toStringNoIndent(CurrentTruncInst) << "\n";
+
+  if (InstInfoMap.empty()) {
+    OS << "  <empty>\n";
+    return;
+  }
+
+  // InstInfoMap is ordered so that each instruction appears before all of its
+  // users, so a node's position in the map is also its evaluation order.
+  DenseMap<const Instruction *, unsigned> Ids;
+  for (const auto &Entry : InstInfoMap)
+    Ids.try_emplace(Entry.first, Ids.size());
+
+  // Print an operand as "#N" if it is a node of this graph, otherwise as the
+  // value itself (a constant, or a leaf defined outside the graph).
+  auto PrintOperand = [&](Value *V) {
+    if (auto *OpI = dyn_cast<Instruction>(V)) {
+      auto It = Ids.find(OpI);
+      if (It != Ids.end()) {
+        OS << '#' << It->second;
+        return;
+      }
+    }
+    V->printAsOperand(OS, /*PrintType=*/true);
+  };
+
+  OS << "  " << InstInfoMap.size() << " nodes\n";
+  for (const auto &Entry : InstInfoMap) {
+    Instruction *I = Entry.first;
+    const Info &In = Entry.second;
+
+    SmallVector<Value *, 4> Operands;
+    getRelevantOperands(I, Operands);
+
+    // Users of a graph node that are themselves outside the graph block the
+    // transform (see getBestTruncatedType), so they are worth calling out.
+    SmallVector<Instruction *, 4> EscapingUsers;
+    for (Use &U : I->uses())
+      if (auto *UI = dyn_cast<Instruction>(U.getUser()))
+        if (UI != CurrentTruncInst && !Ids.count(UI))
+          EscapingUsers.push_back(UI);
+
+    OS << formatv("  #{0,-3} {1,-5} {2,-4}", Ids[I],
+                  Operands.empty() ? "leaf" : "",
+                  EscapingUsers.empty() ? "" : "ESC");
+    // ValidBitWidth/MinBitWidth are only filled in by getMinBitWidth(), so they
+    // both read as 0 when dumping straight after buildTruncExpressionGraph().
+    OS << formatv(" valid={0,-3} min={1,-3}  ", In.ValidBitWidth,
+                  In.MinBitWidth);
+    OS << toStringNoIndent(I) << "\n";
+
+    if (!Operands.empty()) {
+      OS << "         ops: ";
+      ListSeparator LS;
+      for (Value *Op : Operands) {
+        OS << LS;
+        PrintOperand(Op);
+      }
+      OS << "\n";
+    }
+    for (Instruction *UI : EscapingUsers)
+      OS << "         escaping user: " << toStringNoIndent(UI) << "\n";
+    if (In.NewValue)
+      OS << "         new value: " << *In.NewValue << "\n";
+  }
+}
+
+LLVM_DUMP_METHOD void TruncInstCombine::dumpGraph() const {
+  printGraph(dbgs());
+}
+
+#endif // !defined(NDEBUG) || defined(LLVM_ENABLE_DUMP)
 
 bool TruncInstCombine::buildTruncExpressionGraph() {
   SmallVector<Value *, 8> Worklist;
@@ -105,8 +211,11 @@ bool TruncInstCombine::buildTruncExpressionGraph() {
     }
 
     auto *I = dyn_cast<Instruction>(Curr);
-    if (!I)
+    if (!I) {
+      LLVM_DEBUG(dbgs() << "[buildTruncExpresionGraph] I is not an "
+                           "instruction, return false\n");
       return false;
+    }
 
     if (!Stack.empty() && Stack.back() == I) {
       // Already handled all instruction operands, can remove it from both the
@@ -161,15 +270,35 @@ bool TruncInstCombine::buildTruncExpressionGraph() {
       getRelevantOperands(I, Operands);
       // Add only operands not in Stack to prevent cycle
       for (auto *Op : Operands)
-        if (!llvm::is_contained(Stack, Op))
+        if (!llvm::is_contained(Stack, Op)) {
           Worklist.push_back(Op);
+        }
       break;
     }
     default:
       // TODO: Can handle more cases here:
       // 1. sdiv, srem
       // ...
-      return false;
+      if (IntrinsicInst *II = dyn_cast<IntrinsicInst>(I)) {
+        LLVM_DEBUG(dbgs() << "[buildTruncExpresionGraph] Intrinsic: " << *II
+                          << "\n");
+        switch (II->getIntrinsicID()) {
+        case Intrinsic::umin:
+        case Intrinsic::umax: {
+          SmallVector<Value *, 2> Operands;
+          getRelevantOperands(I, Operands);
+          append_range(Worklist, Operands);
+          break;
+        }
+        default:
+          return false;
+        }
+      } else {
+        LLVM_DEBUG(
+            dbgs() << "[buildTruncExpresionGraph] Unhandled instruction: " << *I
+                   << ", returning false\n");
+        return false;
+      }
     }
   }
   return true;
@@ -185,8 +314,15 @@ unsigned TruncInstCombine::getMinBitWidth() {
   unsigned OrigBitWidth =
       CurrentTruncInst->getOperand(0)->getType()->getScalarSizeInBits();
 
-  if (isa<Constant>(Src))
+  LLVM_DEBUG(dbgs() << "[getMinBitWidth] getMinBitWidth TruncBitWidth = "
+                    << TruncBitWidth << " OrigBitWidth = " << OrigBitWidth
+                    << "\n");
+
+  if (isa<Constant>(Src)) {
+    LLVM_DEBUG(dbgs() << "[getMinBitWidth] Src is constant, returning "
+                      << TruncBitWidth << "\n");
     return TruncBitWidth;
+  }
 
   Worklist.push_back(Src);
   InstInfoMap[cast<Instruction>(Src)].ValidBitWidth = TruncBitWidth;
@@ -195,6 +331,8 @@ unsigned TruncInstCombine::getMinBitWidth() {
     Value *Curr = Worklist.back();
 
     if (isa<Constant>(Curr)) {
+      LLVM_DEBUG(dbgs() << "[getMinBitWidth] Skipping constant argument "
+                        << *Curr << "\n");
       Worklist.pop_back();
       continue;
     }
@@ -207,15 +345,22 @@ unsigned TruncInstCombine::getMinBitWidth() {
     SmallVector<Value *, 2> Operands;
     getRelevantOperands(I, Operands);
 
+    LLVM_DEBUG(dbgs() << "[getMinBitWidth] Instruction = " << *I << "\n");
+    LLVM_DEBUG(dbgs() << "[getMinBitWidth] Operands = ");
+    LLVM_DEBUG(dbgs() << llvm::interleaved(llvm::make_pointee_range(Operands))
+                      << "\n");
+
     if (!Stack.empty() && Stack.back() == I) {
       // Already handled all instruction operands, can remove it from both, the
       // Worklist and the Stack, and update MinBitWidth.
       Worklist.pop_back();
       Stack.pop_back();
-      for (auto *Operand : Operands)
-        if (auto *IOp = dyn_cast<Instruction>(Operand))
+      for (auto *Operand : Operands) {
+        if (auto *IOp = dyn_cast<Instruction>(Operand)) {
           Info.MinBitWidth =
               std::max(Info.MinBitWidth, InstInfoMap[IOp].MinBitWidth);
+        }
+      }
       continue;
     }
 
@@ -227,7 +372,7 @@ unsigned TruncInstCombine::getMinBitWidth() {
     // when the instruction is part of a loop.
     Info.MinBitWidth = std::max(Info.MinBitWidth, Info.ValidBitWidth);
 
-    for (auto *Operand : Operands)
+    for (auto *Operand : Operands) {
       if (auto *IOp = dyn_cast<Instruction>(Operand)) {
         // If we already calculated the minimum bit-width for this valid
         // bit-width, or for a smaller valid bit-width, then just keep the
@@ -238,11 +383,14 @@ unsigned TruncInstCombine::getMinBitWidth() {
         InstInfoMap[IOp].ValidBitWidth = ValidBitWidth;
         Worklist.push_back(IOp);
       }
+    }
   }
   unsigned MinBitWidth = InstInfoMap.lookup(cast<Instruction>(Src)).MinBitWidth;
   assert(MinBitWidth >= TruncBitWidth);
 
   if (MinBitWidth > TruncBitWidth) {
+    LLVM_DEBUG(dbgs() << "[getMinBitWidth] MinBitWidth (" << MinBitWidth
+                      << ") > TruncBitWidth (" << TruncBitWidth << ")\n");
     // In this case reducing expression with vector type might generate a new
     // vector type, which is not preferable as it might result in generating
     // sub-optimal code.
@@ -254,21 +402,35 @@ unsigned TruncInstCombine::getMinBitWidth() {
     // succeeded to find such, otherwise, with original bit-width.
     MinBitWidth = Ty ? Ty->getScalarSizeInBits() : OrigBitWidth;
   } else { // MinBitWidth == TruncBitWidth
+    LLVM_DEBUG(dbgs() << "[getMinBitWidth] MinBitWidth (" << MinBitWidth
+                      << ") == TruncBitWidth (" << TruncBitWidth << ")\n");
     // In this case the expression can be evaluated with the trunc instruction
     // destination type, and trunc instruction can be omitted. However, we
     // should not perform the evaluation if the original type is a legal scalar
     // type and the target type is illegal.
-    bool FromLegal = MinBitWidth == 1 || DL.isLegalInteger(OrigBitWidth);
-    bool ToLegal = MinBitWidth == 1 || DL.isLegalInteger(MinBitWidth);
-    if (!DstTy->isVectorTy() && FromLegal && !ToLegal)
-      return OrigBitWidth;
+    // bool FromLegal = MinBitWidth == 1 || DL.isLegalInteger(OrigBitWidth);
+    // bool ToLegal = MinBitWidth == 1 || DL.isLegalInteger(MinBitWidth);
+    // if (!DstTy->isVectorTy() && FromLegal && !ToLegal) {
+    //   dbgs() << "[getMinBitWidth] FromLegal = " << FromLegal << "\n";
+    //   dbgs() << "[getMinBitWidth] ToLegal = " << ToLegal << "\n";
+    //   return OrigBitWidth;
+    // }
   }
+  LLVM_DEBUG(dbgs() << "[getMinBitWidth] Returning MinBitWidth = "
+                    << MinBitWidth << "\n");
   return MinBitWidth;
 }
 
 Type *TruncInstCombine::getBestTruncatedType() {
-  if (!buildTruncExpressionGraph())
+  if (!buildTruncExpressionGraph()) {
+    LLVM_DEBUG(dbgs() << "[getBestTruncatedType] trunc expression graph "
+                         "uncool, bailing out\n");
     return nullptr;
+  }
+
+  LLVM_DEBUG(dbgs() << "-------------------------------------------------------"
+                       "------------\n");
+  // printGraph(dbgs(), "after buildTruncExpressionGraph");
 
   // We don't want to duplicate instructions, which isn't profitable. Thus, we
   // can't shrink something that has multiple uses, unless all uses can be
@@ -277,29 +439,53 @@ Type *TruncInstCombine::getBestTruncatedType() {
   unsigned DesiredBitWidth = 0;
   for (auto Itr : InstInfoMap) {
     Instruction *I = Itr.first;
-    if (I->hasOneUse())
+    if (I->hasOneUse()) {
+      LLVM_DEBUG(dbgs() << "[getBestTruncatedType] Instruction " << *I
+                        << " has one use, so it's OK\n");
       continue;
+    }
     bool IsExtInst = (isa<ZExtInst>(I) || isa<SExtInst>(I));
-    for (Use &U : I->uses())
-      if (auto *UI = dyn_cast<Instruction>(U.getUser()))
-        if (UI != CurrentTruncInst &&
-            (!InstInfoMap.count(UI) ||
-             !isRelevantOperand(UI, U.getOperandNo()))) {
-          if (!IsExtInst)
+    // dbgs() << "[getBestTruncatedType] Instruction is sext or zext: " <<
+    // IsExtInst << "\n";
+    for (Use &U : I->uses()) {
+      if (auto *UI = dyn_cast<Instruction>(U.getUser())) {
+        // dbgs() << "[getBestTruncatedType] Checking use of instruction: " <<
+        // *I << " in " << *UI << "\n";
+        if (UI == CurrentTruncInst)
+          continue;
+        if (!InstInfoMap.contains(UI) ||
+            !isRelevantOperand(UI, U.getOperandNo())) {
+          if (!IsExtInst) {
+            // dbgs() << "[getBestTruncatedType] Nope, uncool\n";
             return nullptr;
+          }
           // If this is an extension from the dest type, we can eliminate it,
           // even if it has multiple users. Thus, update the DesiredBitWidth and
           // validate all extension instructions agrees on same DesiredBitWidth.
           unsigned ExtInstBitWidth =
               I->getOperand(0)->getType()->getScalarSizeInBits();
-          if (DesiredBitWidth && DesiredBitWidth != ExtInstBitWidth)
+          if (DesiredBitWidth && DesiredBitWidth != ExtInstBitWidth) {
+            // dbgs() << "[getBestTruncatedType] Nope, uncool\n";
             return nullptr;
+          }
+          LLVM_DEBUG(dbgs() << "    Updating desired bit width from "
+                            << DesiredBitWidth << " to " << ExtInstBitWidth
+                            << "\n";
+                     dbgs() << "    Based on the first operand of instruction "
+                            << *I << "\n");
           DesiredBitWidth = ExtInstBitWidth;
         }
+      }
+    }
   }
 
   unsigned OrigBitWidth =
       CurrentTruncInst->getOperand(0)->getType()->getScalarSizeInBits();
+
+  LLVM_DEBUG(
+      dbgs()
+      << "[getBestTruncatedType] Still in getBestTruncate, OrigBitWidth = "
+      << OrigBitWidth << " DesiredBitWidth = " << DesiredBitWidth << "\n");
 
   // Initialize MinBitWidth for shift instructions with the minimum number
   // that is greater than shift amount (i.e. shift amount + 1).
@@ -349,11 +535,18 @@ Type *TruncInstCombine::getBestTruncatedType() {
   // visited truncate's operand.
   unsigned MinBitWidth = getMinBitWidth();
 
+  LLVM_DEBUG(
+      dbgs()
+      << "[getBestTruncatedType] Still in getBestTruncate, MinBitWidth = "
+      << MinBitWidth << "\n");
+
   // Check that we can shrink to smaller bit-width than original one and that
   // it is similar to the DesiredBitWidth is such exists.
   if (MinBitWidth >= OrigBitWidth ||
-      (DesiredBitWidth && DesiredBitWidth != MinBitWidth))
+      (DesiredBitWidth && DesiredBitWidth != MinBitWidth)) {
+    dbgs() << "[getBestTruncatedType] Not narrowing\n";
     return nullptr;
+  }
   return IntegerType::get(CurrentTruncInst->getContext(), MinBitWidth);
 }
 
@@ -480,8 +673,30 @@ void TruncInstCombine::ReduceExpressionGraph(Type *SclTy) {
           std::make_pair(cast<PHINode>(I), cast<PHINode>(Res)));
       break;
     }
-    default:
-      llvm_unreachable("Unhandled instruction");
+    default: {
+      if (const IntrinsicInst *II = dyn_cast<IntrinsicInst>(I)) {
+        switch (II->getIntrinsicID()) {
+        case Intrinsic::umin: {
+          Value *LHS = getReducedOperand(I->getOperand(0), SclTy);
+          Value *RHS = getReducedOperand(I->getOperand(1), SclTy);
+          Res = Builder.CreateBinaryIntrinsic(Intrinsic::umin, LHS, RHS);
+          break;
+        }
+        case Intrinsic::umax: {
+          Value *LHS = getReducedOperand(I->getOperand(0), SclTy);
+          Value *RHS = getReducedOperand(I->getOperand(1), SclTy);
+          Res = Builder.CreateBinaryIntrinsic(Intrinsic::umax, LHS, RHS);
+          break;
+        }
+        default: {
+          llvm_unreachable("Unhandled intrinsic");
+          break;
+        }
+        }
+      } else {
+        llvm_unreachable("Unhandled instruction");
+      }
+    }
     }
 
     NodeInfo.NewValue = Res;

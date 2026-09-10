@@ -17,7 +17,9 @@
 
 #include "llvm/ADT/MapVector.h"
 #include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/StringRef.h"
 #include "llvm/Analysis/ValueTracking.h"
+#include "llvm/Support/Compiler.h"
 #include "llvm/Support/KnownBits.h"
 
 //===----------------------------------------------------------------------===//
@@ -48,6 +50,7 @@ class TargetLibraryInfo;
 class TruncInst;
 class Type;
 class Value;
+class raw_ostream;
 
 class TruncInstCombine {
   AssumptionCache &AC;
@@ -83,6 +86,16 @@ public:
 
   /// Perform TruncInst pattern optimization on given function.
   bool run(Function &F);
+
+#if !defined(NDEBUG) || defined(LLVM_ENABLE_DUMP)
+  /// Print the expression graph currently held in InstInfoMap to \p OS, in
+  /// evaluation order, with each node's operands resolved to node indices.
+  /// \p Title is an optional label identifying the point of the dump.
+  void printGraph(raw_ostream &OS, StringRef Title = "") const;
+
+  /// Same as printGraph(), to dbgs(). For use from a debugger.
+  LLVM_DUMP_METHOD void dumpGraph() const;
+#endif
 
 private:
   /// Build expression graph dominated by the /p CurrentTruncInst and append it
