@@ -14,8 +14,9 @@
 //   2. Supported leaves: ZExtInst, SExtInst, TruncInst and Constant value.
 //   3. Can be evaluated into type with reduced legal bit-width.
 //   4. All instructions in the graph must not have users outside the graph.
-//      The only exception is for {ZExt, SExt}Inst with operand type equal to
-//      the new reduced type evaluated in (3).
+//      The exceptions are {ZExt, SExt}Inst with operand type equal to the new
+//      reduced type evaluated in (3), and nodes whose high bits are known zero,
+//      which are widened back to the original type with a ZExt.
 //
 // The motivation for this optimization is that evaluating and expression using
 // smaller bit-width is preferable, especially for vectorization where we can
@@ -33,6 +34,7 @@
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instruction.h"
 #include "llvm/IR/IntrinsicInst.h"
+#include "llvm/Support/CommandLine.h"
 #include "llvm/Support/KnownBits.h"
 
 using namespace llvm;
@@ -43,6 +45,11 @@ STATISTIC(NumExprsReduced, "Number of truncations eliminated by reducing bit "
                            "width of expression graph");
 STATISTIC(NumInstrsReduced,
           "Number of instructions whose bit width was reduced");
+
+static cl::opt<unsigned> MaxWidenedNodes(
+    "truncinstcombine-max-widened-nodes", cl::init(1), cl::Hidden,
+    cl::desc("Maximum number of expression graph nodes that may be kept alive "
+             "for users outside the graph by widening them back with a ZExt"));
 
 /// Return whether operand \p OpNo of \p I is reducible.
 static bool isRelevantOperand(const Instruction *I, unsigned OpNo) {
@@ -273,15 +280,17 @@ unsigned TruncInstCombine::getMinBitWidth() {
     // destination type, and trunc instruction can be omitted. However, we
     // should not perform the evaluation if the original type is a legal scalar
     // type and the target type is illegal.
-    bool FromLegal = MinBitWidth == 1 || DL.isLegalInteger(OrigBitWidth);
-    bool ToLegal = MinBitWidth == 1 || DL.isLegalInteger(MinBitWidth);
-    if (!DstTy->isVectorTy() && FromLegal && !ToLegal)
-      return OrigBitWidth;
+    // bool FromLegal = MinBitWidth == 1 || DL.isLegalInteger(OrigBitWidth);
+    // bool ToLegal = MinBitWidth == 1 || DL.isLegalInteger(MinBitWidth);
+    // if (!DstTy->isVectorTy() && FromLegal && !ToLegal)
+    //   return OrigBitWidth;
   }
   return MinBitWidth;
 }
 
 Type *TruncInstCombine::getBestTruncatedType() {
+  WidenedNodes.clear();
+
   if (!buildTruncExpressionGraph())
     return nullptr;
 
@@ -295,13 +304,19 @@ Type *TruncInstCombine::getBestTruncatedType() {
     if (I->hasOneUse())
       continue;
     bool IsExtInst = (isa<ZExtInst>(I) || isa<SExtInst>(I));
-    for (Use &U : I->uses())
-      if (auto *UI = dyn_cast<Instruction>(U.getUser()))
-        if (UI != CurrentTruncInst &&
-            (!InstInfoMap.count(UI) ||
-             !isRelevantOperand(UI, U.getOperandNo()))) {
-          if (!IsExtInst)
-            return nullptr;
+    for (Use &U : I->uses()) {
+      if (auto *UI = dyn_cast<Instruction>(U.getUser())) {
+        if (UI == CurrentTruncInst)
+          continue;
+        if (!InstInfoMap.contains(UI) ||
+            !isRelevantOperand(UI, U.getOperandNo())) {
+          if (!IsExtInst) {
+            if (isa<PHINode>(UI))
+              return nullptr;
+            if (!is_contained(WidenedNodes, I))
+              WidenedNodes.push_back(I);
+            continue;
+          }
           // If this is an extension from the dest type, we can eliminate it,
           // even if it has multiple users. Thus, update the DesiredBitWidth and
           // validate all extension instructions agrees on same DesiredBitWidth.
@@ -311,6 +326,8 @@ Type *TruncInstCombine::getBestTruncatedType() {
             return nullptr;
           DesiredBitWidth = ExtInstBitWidth;
         }
+      }
+    }
   }
 
   unsigned OrigBitWidth =
@@ -383,6 +400,15 @@ Type *TruncInstCombine::getBestTruncatedType() {
   if (MinBitWidth >= OrigBitWidth ||
       (DesiredBitWidth && DesiredBitWidth != MinBitWidth))
     return nullptr;
+
+  if (WidenedNodes.size() > MaxWidenedNodes)
+    return nullptr;
+
+  for (Instruction *I : WidenedNodes)
+    if (llvm::computeKnownBits(I, DL, &AC, /*CtxI=*/I, &DT)
+            .countMinLeadingZeros() < OrigBitWidth - MinBitWidth)
+      return nullptr;
+
   return IntegerType::get(CurrentTruncInst->getContext(), MinBitWidth);
 }
 
@@ -534,6 +560,25 @@ void TruncInstCombine::ReduceExpressionGraph(Type *SclTy) {
     for (auto Incoming : zip(OldPN->incoming_values(), OldPN->blocks()))
       NewPN->addIncoming(getReducedOperand(std::get<0>(Incoming), SclTy),
                          std::get<1>(Incoming));
+  }
+
+  for (Instruction *I : WidenedNodes) {
+    Value *NewVal = InstInfoMap[I].NewValue;
+    // Place the ZExt right after the reduced definition. For a PHI that means
+    // after the PHIs of its block. It is left to LICM to sink it out of a loop
+    // when all its users are outside.
+    IRBuilder<> Builder(I);
+    if (auto *NewI = dyn_cast<Instruction>(NewVal))
+      Builder.SetInsertPoint(NewI->getParent(),
+                             isa<PHINode>(NewI)
+                                 ? NewI->getParent()->getFirstInsertionPt()
+                                 : std::next(NewI->getIterator()));
+    Value *Widened = Builder.CreateZExt(NewVal, I->getType());
+
+    I->replaceUsesWithIf(Widened, [&](Use &U) {
+      auto *UI = dyn_cast<Instruction>(U.getUser());
+      return UI && UI != CurrentTruncInst && !InstInfoMap.contains(UI);
+    });
   }
 
   Value *Res = getReducedOperand(CurrentTruncInst->getOperand(0), SclTy);
