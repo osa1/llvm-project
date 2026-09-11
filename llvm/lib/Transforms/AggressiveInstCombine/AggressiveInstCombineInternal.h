@@ -76,6 +76,8 @@ class TruncInstCombine {
   /// all other instructions in the graph that uses it.
   MapVector<Instruction *, Info> InstInfoMap;
 
+  SmallVector<Instruction *, 4> WidenedNodes;
+
 public:
   TruncInstCombine(AssumptionCache &AC, TargetLibraryInfo &TLI,
                    const DataLayout &DL, const DominatorTree &DT)

@@ -88,9 +88,8 @@ define <2 x i16> @extract_mul_insert(<2 x i8> %x) {
 ; the rebuilt insertelement.
 define i8 @insert_index_is_reduced_value() {
 ; CHECK-LABEL: @insert_index_is_reduced_value(
-; CHECK-NEXT:    [[VECINS:%.*]] = insertelement <1 x i32> zeroinitializer, i32 0, i32 0
-; CHECK-NEXT:    [[VECEXT:%.*]] = extractelement <1 x i32> [[VECINS]], i32 0
-; CHECK-NEXT:    [[TRUNC:%.*]] = trunc i32 [[VECEXT]] to i8
+; CHECK-NEXT:    [[VECINS:%.*]] = insertelement <1 x i8> zeroinitializer, i8 0, i32 0
+; CHECK-NEXT:    [[TRUNC:%.*]] = extractelement <1 x i8> [[VECINS]], i32 0
 ; CHECK-NEXT:    ret i8 [[TRUNC]]
 ;
   %cast = trunc i64 0 to i32
