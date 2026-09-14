@@ -316,6 +316,12 @@ struct VPlanTransforms {
   truncateToMinimalBitwidths(VPlan &Plan,
                              const MapVector<Instruction *, uint64_t> &MinBWs);
 
+  /// Narrow integer min/max reductions to the smallest type their values
+  /// provably fit into. For example, a umin/umax reduction over values
+  /// zero-extended from i8 with an i8 start value is performed on i8 lanes,
+  /// which avoids the extends and allows a larger VF.
+  static void narrowMinMaxReductions(VPlan &Plan);
+
   /// Check \p Plan's live-ins and replace them with constants, if they can be
   /// simplified via SCEV.
   static void simplifyLiveInsWithSCEV(VPlan &Plan,

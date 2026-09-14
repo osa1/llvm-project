@@ -6472,6 +6472,7 @@ void LoopVectorizationPlanner::buildVPlans(VPlan &VPlan1, ElementCount MinVF,
     RUN_VPLAN_PASS(VPlanTransforms::sinkPredicatedStores, *Plan, PSE, OrigLoop);
     RUN_VPLAN_PASS(VPlanTransforms::truncateToMinimalBitwidths, *Plan,
                    Config.getMinimalBitwidths());
+    RUN_VPLAN_PASS(VPlanTransforms::narrowMinMaxReductions, *Plan);
     RUN_VPLAN_PASS(VPlanTransforms::optimize, *Plan);
     // TODO: try to put addExplicitVectorLength close to addActiveLaneMask
     if (CM->foldTailWithEVL()) {
@@ -7461,6 +7462,18 @@ static SmallVector<Instruction *> preparePlanForEpilogueVectorLoop(
             InstsToMove.push_back(I);
         }
       } else {
+        // If the reduction has been narrowed to a smaller type (see
+        // VPlanTransforms::narrowMinMaxReductions), the resume value from the
+        // main vector loop is still in the original, wider type. Truncate it
+        // to match the narrowed reduction phi.
+        if (Type *RdxTy = ReductionPhi->getScalarType();
+            ResumeV->getType() != RdxTy) {
+          auto *ResumeI = cast<Instruction>(ResumeV);
+          IRBuilder<> Builder(ResumeI->getParent(),
+                              ResumeI->getParent()->getFirstNonPHIIt());
+          ResumeV = Builder.CreateTrunc(ResumeV, RdxTy);
+          InstsToMove.push_back(cast<Instruction>(ResumeV));
+        }
         VPValue *StartVal = Plan.getOrAddLiveIn(ResumeV);
         auto *PhiR = dyn_cast<VPReductionPHIRecipe>(&R);
         if (auto *VPI = dyn_cast<VPInstruction>(PhiR->getStartValue())) {

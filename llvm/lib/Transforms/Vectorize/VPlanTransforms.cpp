@@ -2621,6 +2621,167 @@ void VPlanTransforms::truncateToMinimalBitwidths(
   }
 }
 
+/// Try to narrow the min/max reduction \p PhiR to a smaller integer type. The
+/// value of a min/max reduction is always one of its inputs (the start value or
+/// one of the values reduced in the loop), so if all of those provably fit into
+/// a narrower type, the whole reduction can be performed in that type. Returns
+/// true if \p PhiR was narrowed.
+static bool narrowMinMaxReduction(VPlan &Plan, VPReductionPHIRecipe *PhiR) {
+  RecurKind Kind = PhiR->getRecurrenceKind();
+  bool IsSigned;
+  switch (Kind) {
+  case RecurKind::UMin:
+  case RecurKind::UMax:
+    IsSigned = false;
+    break;
+  case RecurKind::SMin:
+  case RecurKind::SMax:
+    IsSigned = true;
+    break;
+  default:
+    return false;
+  }
+
+  // Only handle plain out-of-loop reductions; in-loop, ordered, partial and
+  // multi-use reductions (argmin/argmax) need extra care.
+  if (PhiR->isInLoop() || PhiR->isPartialReduction() ||
+      PhiR->hasUsesOutsideReductionChain())
+    return false;
+
+  Type *OldTy = PhiR->getScalarType();
+  if (!OldTy->isIntegerTy())
+    return false;
+
+  // The start value must be a constant, so we know how many bits it needs.
+  const APInt *StartC;
+  if (!match(PhiR->getStartValue(), m_APInt(StartC)))
+    return false;
+  unsigned MinBW =
+      IsSigned ? StartC->getSignificantBits() : StartC->getActiveBits();
+
+  // Collect the min/max recipes forming the reduction chain, together with the
+  // values fed into it. Recipes in the chain must not have users outside the
+  // chain, except for the final one feeding the reduction result.
+  Intrinsic::ID MinMaxID = getMinMaxReductionIntrinsicOp(Kind);
+  VPValue *BackedgeVal = PhiR->getBackedgeValue();
+  SmallPtrSet<VPRecipeBase *, 4> Chain;
+  SmallVector<VPValue *> Inputs;
+  SmallPtrSet<VPValue *, 8> Visited;
+  SmallVector<VPValue *> Worklist = {BackedgeVal};
+  bool FoundPhi = false;
+  while (!Worklist.empty()) {
+    VPValue *Cur = Worklist.pop_back_val();
+    if (Cur == PhiR) {
+      FoundPhi = true;
+      continue;
+    }
+    if (!Visited.insert(Cur).second)
+      continue;
+    auto *MinMaxR =
+        dyn_cast_or_null<VPWidenIntrinsicRecipe>(Cur->getDefiningRecipe());
+    if (MinMaxR && MinMaxR->getVectorIntrinsicID() == MinMaxID &&
+        (Cur == BackedgeVal || Cur->hasOneUse())) {
+      Chain.insert(MinMaxR);
+      append_range(Worklist, MinMaxR->operands());
+      continue;
+    }
+    Inputs.push_back(Cur);
+  }
+  // The phi itself must only be used by the chain.
+  if (!FoundPhi || Chain.empty() || any_of(PhiR->users(), [&Chain](VPUser *U) {
+        return !Chain.contains(dyn_cast<VPRecipeBase>(U));
+      }))
+    return false;
+
+  // Determine how many bits the values reduced in the loop need. Only handle
+  // extends and constants for now; both narrow back without extra cost.
+  auto ExtOpc = IsSigned ? Instruction::SExt : Instruction::ZExt;
+  for (VPValue *In : Inputs) {
+    const APInt *C;
+    if (match(In, m_APInt(C))) {
+      MinBW = std::max<unsigned>(MinBW, IsSigned ? C->getSignificantBits()
+                                                 : C->getActiveBits());
+      continue;
+    }
+    auto *Ext = dyn_cast_or_null<VPWidenCastRecipe>(In->getDefiningRecipe());
+    if (!Ext || Ext->getOpcode() != ExtOpc)
+      return false;
+    MinBW = std::max<unsigned>(
+        MinBW, Ext->getOperand(0)->getScalarType()->getScalarSizeInBits());
+  }
+
+  unsigned NewBW = std::max<unsigned>(8, bit_ceil(MinBW));
+  if (NewBW >= OldTy->getScalarSizeInBits())
+    return false;
+  auto *NewTy = IntegerType::get(Plan.getContext(), NewBW);
+
+  VPInstruction *RdxResult = vputils::findComputeReductionResult(PhiR);
+  if (!RdxResult)
+    return false;
+
+  // Build the narrowed reduction, starting with the phi. Its backedge value is
+  // filled in once the narrowed chain has been created.
+  VPValue *NewStart = Plan.getConstantInt(StartC->trunc(NewBW));
+  auto *NewPhiR = PhiR->cloneWithOperands(NewStart, NewStart);
+  NewPhiR->insertBefore(PhiR);
+
+  DenseMap<VPValue *, VPValue *> Narrowed;
+  Narrowed[PhiR] = NewPhiR;
+  std::function<VPValue *(VPValue *)> Narrow = [&](VPValue *V) -> VPValue * {
+    VPValue *&Res = Narrowed[V];
+    if (Res)
+      return Res;
+    auto *Def = V->getDefiningRecipe();
+    if (Chain.contains(Def)) {
+      auto *MinMaxR = cast<VPWidenIntrinsicRecipe>(Def);
+      SmallVector<VPValue *> NewOps;
+      for (VPValue *Op : MinMaxR->operands())
+        NewOps.push_back(Narrow(Op));
+      auto *NewMinMaxR = new VPWidenIntrinsicRecipe(
+          MinMaxID, NewOps, NewTy, *MinMaxR, *MinMaxR, MinMaxR->getDebugLoc());
+      NewMinMaxR->insertBefore(MinMaxR);
+      Res = NewMinMaxR;
+    } else if (const APInt *C; match(V, m_APInt(C))) {
+      Res = Plan.getConstantInt(C->trunc(NewBW));
+    } else {
+      // Truncate the extended input back; the trunc/ext pair is folded away by
+      // recipe simplification. Insert right after the extend, so the truncate
+      // dominates all uses in the chain.
+      Res = VPBuilder::getToInsertAfter(Def).createWidenCast(Instruction::Trunc,
+                                                             V, NewTy);
+    }
+    return Res;
+  };
+  VPValue *NewBackedgeVal = Narrow(BackedgeVal);
+  NewPhiR->setOperand(1, NewBackedgeVal);
+
+  // Finally compute the reduction result in the narrow type and extend it back
+  // to the original type for users outside the vector loop.
+  auto *NewRdxResult = RdxResult->cloneWithOperands({NewBackedgeVal});
+  NewRdxResult->insertBefore(RdxResult);
+  VPValue *Res = VPBuilder(RdxResult).createScalarCast(
+      ExtOpc, NewRdxResult, OldTy, RdxResult->getDebugLoc());
+  RdxResult->replaceAllUsesWith(Res);
+  RdxResult->eraseFromParent();
+  // The original phi and chain are now dead; they are removed by
+  // removeDeadRecipes.
+  return true;
+}
+
+void VPlanTransforms::narrowMinMaxReductions(VPlan &Plan) {
+  if (Plan.hasScalarVFOnly())
+    return;
+  VPRegionBlock *LoopRegion = Plan.getVectorLoopRegion();
+  if (!LoopRegion)
+    return;
+  SmallVector<VPRecipeBase *> Phis(
+      make_pointer_range(LoopRegion->getEntryBasicBlock()->phis()));
+  for (VPRecipeBase *R : Phis) {
+    if (auto *PhiR = dyn_cast<VPReductionPHIRecipe>(R))
+      narrowMinMaxReduction(Plan, PhiR);
+  }
+}
+
 bool VPlanTransforms::removeBranchOnConst(VPlan &Plan, bool OnlyLatches) {
   std::optional<VPDominatorTree> VPDT;
   if (OnlyLatches)
