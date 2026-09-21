@@ -988,6 +988,25 @@ static bool upgradeArmOrAarch64IntrinsicFunction(bool IsArm, Function *F,
         return true;
       }
 
+      // Changed in 24.0: the integer min/max intrinsics are exactly equivalent
+      // to the target-independent ones, so use those instead. Note that the
+      // trailing '.' keeps this from matching the across-lane ('sminv') and
+      // pairwise ('sminp') intrinsics, which have no generic equivalent.
+      if (Name.starts_with("smax.") || Name.starts_with("smin.") ||
+          Name.starts_with("umax.") || Name.starts_with("umin.")) {
+        Intrinsic::ID ID = StringSwitch<Intrinsic::ID>(Name.take_front(4))
+                               .Case("smax", Intrinsic::smax)
+                               .Case("smin", Intrinsic::smin)
+                               .Case("umax", Intrinsic::umax)
+                               .Case("umin", Intrinsic::umin)
+                               .Default(Intrinsic::not_intrinsic);
+        if (F->arg_size() != 2 || !F->getReturnType()->isIntOrIntVectorTy())
+          return false; // Invalid IR.
+        NewFn = Intrinsic::getOrInsertDeclaration(F->getParent(), ID,
+                                                  F->getReturnType());
+        return true;
+      }
+
       if (Name.starts_with("addp")) {
         // 'aarch64.neon.addp*'.
         if (F->arg_size() != 2)
