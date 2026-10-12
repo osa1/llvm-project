@@ -203,8 +203,8 @@ define i32 @test_select_idx_mem2reg(i1 %c) {
 define i64 @test_select_like_zext_idx_mem2reg(i1 %c) !prof !0 {
 ; CHECK-LABEL: @test_select_like_zext_idx_mem2reg(
 ; CHECK-NEXT:    [[IDX:%.*]] = zext i1 [[C:%.*]] to i64
-; CHECK-NEXT:    [[RES:%.*]] = select i1 [[C]], i64 2, i64 1, !prof [[PROF1:![0-9]+]]
-; CHECK-NEXT:    ret i64 [[RES]]
+; CHECK-NEXT:    [[RES_SROA_SPECULATED:%.*]] = select i1 [[C]], i64 2, i64 1, !prof [[PROF1:![0-9]+]]
+; CHECK-NEXT:    ret i64 [[RES_SROA_SPECULATED]]
 ;
   %alloca = alloca [2 x i64], align 8
   store i64 1, ptr %alloca
