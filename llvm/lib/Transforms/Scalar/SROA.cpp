@@ -260,6 +260,8 @@ private:
   bool splitAlloca(AllocaInst &AI, AllocaSlices &AS);
   bool propagateStoredValuesToLoads(AllocaInst &AI, AllocaSlices &AS);
   std::pair<bool /*Changed*/, bool /*CFGChanged*/> runOnAlloca(AllocaInst &AI);
+  std::pair<bool /*Changed*/, bool /*CFGChanged*/>
+  unfoldTwoSlotGEPs(Function &F);
   void clobberUse(Use &U);
   bool deleteDeadInstructions(SmallPtrSetImpl<AllocaInst *> &DeletedAllocas);
   bool promoteAllocas();
@@ -587,34 +589,6 @@ public:
   bool operator!=(const Slice &RHS) const { return !operator==(RHS); }
 };
 
-/// A variable-index GEP into an alloca that is only used by simple (non-atomic,
-/// non-volatile) loads and stores, where the index can only have one of two
-/// values without those accesses being out of bounds.
-///
-/// These GEPs can be replaced with a select between the two constant-offset
-/// pointers.
-struct TwoSlotGEP {
-  /// The GEP that can only index two slots in the alloca without UB.
-  GetElementPtrInst *GEP;
-
-  /// The index variable.
-  Value *Idx;
-
-  /// Value of `Idx` that indexes the second slot.
-  ConstantInt *Idx1;
-
-  /// The byte offsets of the slots in the alloca. The value `Idx1` indexes
-  /// `Offset1`.
-  uint64_t Offset0, Offset1;
-
-  /// The size of the accesses.
-  uint64_t Size;
-
-  /// Whether the GEP has store uses.
-  /// TODO: Document why we need this.
-  bool HasStores;
-};
-
 /// Representation of the alloca slices.
 ///
 /// This class represents the slices of an alloca which are formed by its
@@ -633,8 +607,6 @@ public:
   /// ignored.
   bool isEscaped() const { return PointerEscapingInstr; }
   bool isEscapedReadOnly() const { return PointerEscapingInstrReadOnly; }
-
-  ArrayRef<TwoSlotGEP> getTwoSlotGEPs() const { return TwoSlotGEPs; }
 
   /// Support for iterating over the slices.
   /// @{
@@ -747,11 +719,6 @@ private:
   /// want to swap this particular input for poison to simplify the use lists of
   /// the alloca.
   SmallVector<Use *, 8> DeadOperands;
-
-  /// Variable-index GEPs of the alloca that are used with simple stores and
-  /// loads, with a load/store type that allows only two valid offsets to the
-  /// alloca. These can be folded into selects.
-  SmallVector<TwoSlotGEP, 2> TwoSlotGEPs;
 };
 
 /// A partition of the slices.
@@ -1049,79 +1016,6 @@ static Value *foldPHINodeOrSelectInst(Instruction &I) {
   return foldSelectInst(cast<SelectInst>(I));
 }
 
-/// Check whether \p GEP, whose pointer operand points to the start of an alloca
-/// of \p AllocSize bytes, is a TwoSlotGEP. Example:
-///
-///   %a = alloca [2 x i32]
-///   %p = getelementptr nusw [2 x i32], ptr %a, i64 0, i64 %idx
-///   %v = load i32, ptr %p
-///
-/// The load is only in bounds if %idx is 0 or 1, so %p is either %a or %a + 4.
-static std::optional<TwoSlotGEP> analyzeTwoSlotGEP(GetElementPtrInst &GEP,
-                                                   uint64_t AllocSize,
-                                                   const DataLayout &DL) {
-  // nusw guarantees that the offset computation does not wrap, so the offset
-  // is exactly `ConstOffset + Scale * Idx`.
-  if (GEP.hasAllConstantIndices() || !GEP.hasNoUnsignedSignedWrap() ||
-      GEP.getType()->isVectorTy())
-    return std::nullopt;
-
-  unsigned IdxWidth = DL.getIndexTypeSizeInBits(GEP.getType());
-  SmallMapVector<Value *, APInt, 4> VarOffsets;
-  APInt ConstOffset(IdxWidth, 0);
-
-  if (!GEP.collectOffset(DL, IdxWidth, VarOffsets, ConstOffset) ||
-      VarOffsets.size() != 1)
-    return std::nullopt;
-
-  auto [Idx, Scale] = VarOffsets.front();
-
-  // The GEP must only be used by simple loads and stores.
-  uint64_t LoadStoreSize = 0;
-  bool HasStores = false;
-  for (User *U : GEP.users()) {
-    auto *LI = dyn_cast<LoadInst>(U);
-    auto *SI = dyn_cast<StoreInst>(U);
-    if (LI ? !LI->isSimple()
-           : !SI || !SI->isSimple() || SI->getValueOperand() == &GEP)
-      return std::nullopt;
-
-    TypeSize AccessSize = DL.getTypeStoreSize(getLoadStoreType(U));
-
-    if (AccessSize.isScalable())
-      return std::nullopt;
-
-    if (!LoadStoreSize)
-      LoadStoreSize = AccessSize.getFixedValue();
-    else if (LoadStoreSize != AccessSize.getFixedValue())
-      return std::nullopt;
-
-    HasStores |= SI != nullptr;
-  }
-
-  if (!LoadStoreSize)
-    return std::nullopt;
-
-  int64_t C = ConstOffset.getSExtValue();
-  int64_t S = Scale.getSExtValue();
-
-  // The accesses are in bounds iff `0 <= C + (S * Idx) <= AllocSize - Size`.
-  int64_t IdxMin = divideCeilSigned(-C, S);
-  int64_t IdxMax =
-      divideFloorSigned((int64_t)(AllocSize - LoadStoreSize) - C, S);
-  auto *IdxTy = cast<IntegerType>(Idx->getType());
-  if (IdxMax - IdxMin != 1)
-    return std::nullopt;
-
-  return TwoSlotGEP{&GEP,
-                    Idx,
-                    ConstantInt::getSigned(IdxTy, IdxMax),
-                    uint64_t(C + S * IdxMin),
-                    uint64_t(C + S * IdxMax),
-                    LoadStoreSize,
-                    HasStores};
-}
-
 /// Builder for the alloca slices.
 ///
 /// This class builds a set of alloca slices by recursively visiting the uses
@@ -1205,18 +1099,6 @@ private:
   void visitGetElementPtrInst(GetElementPtrInst &GEPI) {
     if (GEPI.use_empty())
       return markAsDead(GEPI);
-
-    // A two-slot GEP has an unknown offset, but the offset can only be two
-    // values, which we can use to slice the alloca.
-    //
-    // TODO: The offset doesn't need to be zero here, pass it to
-    // `analyzeTwoSlotGEPs` and use it as the initial offset.
-    if (IsOffsetKnown && Offset.isZero()) {
-      if (auto TS = analyzeTwoSlotGEP(GEPI, AllocSize, DL)) {
-        AS.TwoSlotGEPs.push_back(*TS);
-        return;
-      }
-    }
 
     return Base::visitGetElementPtrInst(GEPI);
   }
@@ -6455,14 +6337,215 @@ bool SROA::propagateStoredValuesToLoads(AllocaInst &AI, AllocaSlices &AS) {
   return true;
 }
 
-/// Check whether the accesses through the two-slot GEPs of \p AS can be
-/// promoted once they are rewritten to constant offsets.
+namespace {
+
+/// A variable-index GEP into an alloca that is only used by simple (non-atomic,
+/// non-volatile) loads and stores, where the index can only have one of two
+/// values without those accesses being out of bounds.
 ///
-/// Two slots should either not overlap with the other slices, or they should
-/// fully overlap, without extending to either side.
-static bool canPromoteTwoSlotGEPs(const AllocaSlices &AS) {
+/// These GEPs can be replaced with a select between the two constant-offset
+/// pointers.
+struct TwoSlotGEP {
+  /// The GEP that can only index two slots in the alloca without UB.
+  GetElementPtrInst *GEP;
+
+  /// The index variable.
+  Value *Idx;
+
+  /// Value of `Idx` that indexes the second slot.
+  ConstantInt *Idx1;
+
+  /// The byte offsets of the slots in the alloca. The value `Idx1` indexes
+  /// `Offset1`.
+  uint64_t Offset0, Offset1;
+
+  /// The size of the accesses.
+  uint64_t Size;
+};
+
+} // end anonymous namespace
+
+/// Check whether \p GEP, whose pointer operand points to the start of an alloca
+/// of \p AllocSize bytes, is a TwoSlotGEP. Example:
+///
+///   %a = alloca [2 x i32]
+///   %p = getelementptr nusw [2 x i32], ptr %a, i64 0, i64 %idx
+///   %v = load i32, ptr %p
+///
+/// The load is only in bounds if %idx is 0 or 1, so %p is either %a or %a + 4.
+static std::optional<TwoSlotGEP> analyzeTwoSlotGEP(GetElementPtrInst &GEP,
+                                                   uint64_t AllocSize,
+                                                   const DataLayout &DL) {
+  // nusw guarantees that the offset computation does not wrap, so the offset
+  // is exactly `ConstOffset + Scale * Idx`.
+  if (GEP.hasAllConstantIndices() || !GEP.hasNoUnsignedSignedWrap() ||
+      GEP.getType()->isVectorTy())
+    return std::nullopt;
+
+  unsigned IdxWidth = DL.getIndexTypeSizeInBits(GEP.getType());
+  SmallMapVector<Value *, APInt, 4> VarOffsets;
+  APInt ConstOffset(IdxWidth, 0);
+
+  if (!GEP.collectOffset(DL, IdxWidth, VarOffsets, ConstOffset) ||
+      VarOffsets.size() != 1)
+    return std::nullopt;
+
+  auto [Idx, Scale] = VarOffsets.front();
+
+  // The GEP must only be used by simple loads and stores.
+  uint64_t LoadStoreSize = 0;
+  for (User *U : GEP.users()) {
+    auto *LI = dyn_cast<LoadInst>(U);
+    auto *SI = dyn_cast<StoreInst>(U);
+    if (LI ? !LI->isSimple()
+           : !SI || !SI->isSimple() || SI->getValueOperand() == &GEP)
+      return std::nullopt;
+
+    TypeSize AccessSize = DL.getTypeStoreSize(getLoadStoreType(U));
+
+    if (AccessSize.isScalable())
+      return std::nullopt;
+
+    if (!LoadStoreSize)
+      LoadStoreSize = AccessSize.getFixedValue();
+    else if (LoadStoreSize != AccessSize.getFixedValue())
+      return std::nullopt;
+  }
+
+  if (!LoadStoreSize)
+    return std::nullopt;
+
+  int64_t C = ConstOffset.getSExtValue();
+  int64_t S = Scale.getSExtValue();
+
+  // The accesses are in bounds iff `0 <= C + (S * Idx) <= AllocSize - Size`.
+  int64_t IdxMin = divideCeilSigned(-C, S);
+  int64_t IdxMax =
+      divideFloorSigned((int64_t)(AllocSize - LoadStoreSize) - C, S);
+  auto *IdxTy = cast<IntegerType>(Idx->getType());
+  if (IdxMax - IdxMin != 1)
+    return std::nullopt;
+
+  return TwoSlotGEP{&GEP,
+                    Idx,
+                    ConstantInt::getSigned(IdxTy, IdxMax),
+                    uint64_t(C + S * IdxMin),
+                    uint64_t(C + S * IdxMax),
+                    LoadStoreSize};
+}
+
+namespace {
+
+/// Finds the two-slot GEPs of an alloca, and the byte ranges accessed by its
+/// other uses.
+///
+/// This is only used to decide whether rewriting the two-slot GEPs is
+/// profitable. Once they are rewritten, the alloca is sliced again by the
+/// SliceBuilder, so this only handles the common uses and aborts on anything
+/// else.
+class TwoSlotGEPFinder : public PtrUseVisitor<TwoSlotGEPFinder> {
+  friend class PtrUseVisitor<TwoSlotGEPFinder>;
+  friend class InstVisitor<TwoSlotGEPFinder>;
+
+  using Base = PtrUseVisitor<TwoSlotGEPFinder>;
+
+public:
+  /// A byte range of the alloca accessed by a use other than a two-slot GEP.
+  struct Access {
+    uint64_t BeginOffset, EndOffset;
+    bool IsSplittable;
+  };
+
+  SmallVector<TwoSlotGEP, 2> TwoSlotGEPs;
+  SmallVector<Access, 8> Accesses;
+
+  TwoSlotGEPFinder(const DataLayout &DL, uint64_t AllocSize)
+      : Base(DL), AllocSize(AllocSize) {}
+
+private:
+  const uint64_t AllocSize;
+
+  /// Memory transfers visited so far, to detect transfers within the alloca.
+  SmallPtrSet<MemTransferInst *, 4> VisitedMemTransfers;
+
+  void insertAccess(Instruction &I, TypeSize Size, bool IsSplittable) {
+    if (!IsOffsetKnown || Size.isScalable() || Offset.uge(AllocSize) ||
+        Size.getFixedValue() > AllocSize - Offset.getZExtValue())
+      return PI.setAborted(&I);
+
+    uint64_t BeginOffset = Offset.getZExtValue();
+    Accesses.push_back(
+        {BeginOffset, BeginOffset + Size.getFixedValue(), IsSplittable});
+  }
+
+  /// Same as the SliceBuilder's splittable loads and stores.
+  bool isSplittableType(Type *Ty) const {
+    return Ty->isIntegerTy() && DL.typeSizeEqualsStoreSize(Ty);
+  }
+
+  void visitGetElementPtrInst(GetElementPtrInst &GEPI) {
+    if (IsOffsetKnown && Offset.isZero()) {
+      if (auto TS = analyzeTwoSlotGEP(GEPI, AllocSize, DL)) {
+        TwoSlotGEPs.push_back(*TS);
+        return;
+      }
+    }
+
+    Base::visitGetElementPtrInst(GEPI);
+  }
+
+  void visitLoadInst(LoadInst &LI) {
+    if (!LI.isSimple())
+      return PI.setAborted(&LI);
+
+    Type *Ty = LI.getType();
+    insertAccess(LI, DL.getTypeStoreSize(Ty), isSplittableType(Ty));
+  }
+
+  void visitStoreInst(StoreInst &SI) {
+    Value *ValOp = SI.getValueOperand();
+    if (ValOp == *U)
+      return PI.setEscapedAndAborted(&SI);
+    if (!SI.isSimple())
+      return PI.setAborted(&SI);
+
+    Type *Ty = ValOp->getType();
+    insertAccess(SI, DL.getTypeStoreSize(Ty), isSplittableType(Ty));
+  }
+
+  void visitMemSetInst(MemSetInst &II) {
+    auto *Length = dyn_cast<ConstantInt>(II.getLength());
+    if (!Length || II.isVolatile())
+      return PI.setAborted(&II);
+
+    insertAccess(II, TypeSize::getFixed(Length->getLimitedValue()),
+                 /*IsSplittable=*/true);
+  }
+
+  void visitMemTransferInst(MemTransferInst &II) {
+    // Give up on transfers within the alloca, which may not be splittable.
+    auto *Length = dyn_cast<ConstantInt>(II.getLength());
+    if (!Length || II.isVolatile() || !VisitedMemTransfers.insert(&II).second)
+      return PI.setAborted(&II);
+
+    insertAccess(II, TypeSize::getFixed(Length->getLimitedValue()),
+                 /*IsSplittable=*/true);
+  }
+
+  void visitInstruction(Instruction &I) { PI.setAborted(&I); }
+};
+
+} // end anonymous namespace
+
+/// Check whether the accesses through \p TwoSlotGEPs can be promoted once the
+/// GEPs are rewritten to constant offsets.
+///
+/// The slots should either not overlap with the other accesses of the alloca,
+/// or only overlap with splittable accesses and accesses of exactly the slot.
+static bool canPromoteTwoSlotGEPs(ArrayRef<TwoSlotGEP> TwoSlotGEPs,
+                                  ArrayRef<TwoSlotGEPFinder::Access> Accesses) {
   SmallVector<std::pair<uint64_t, uint64_t>, 4> Slots;
-  for (const TwoSlotGEP &TS : AS.getTwoSlotGEPs())
+  for (const TwoSlotGEP &TS : TwoSlotGEPs)
     for (uint64_t Offset : {TS.Offset0, TS.Offset1})
       Slots.emplace_back(Offset, Offset + TS.Size);
 
@@ -6478,27 +6561,10 @@ static bool canPromoteTwoSlotGEPs(const AllocaSlices &AS) {
         }))
       return false;
 
-    // Check other, constant offset slices of the allocation.
-    for (const Slice &S : AS) {
-      std::pair<uint64_t, uint64_t> Range(S.beginOffset(), S.endOffset());
-      // If the slot does not overlap with the slice at all, then the slot can
-      // be split.
-      if (!Overlaps(Slot, Range))
-        continue;
-
-      // Otherwise there's an overlap, if we're allowed to split the slice
-      // further, we can still split the slot and promote it.
-      if (S.isSplittable())
-        continue;
-
-      // If there's an overlap and the slice can't be split further, the overlap
-      // should be exact (should not extend to either side). We also repeat the
-      // "simple load or store" check here that we do in `analyzeTwoSlotGEP` as
-      // we haven't visited the users of this slice, and we only want to split
-      // the slots if we'll promote them.
-      auto *I = cast<Instruction>(S.getUse()->getUser());
-      if (Range != Slot || !isa<LoadInst, StoreInst>(I) || I->isVolatile() ||
-          I->isAtomic())
+    // Check the other accesses of the allocation.
+    for (const TwoSlotGEPFinder::Access &A : Accesses) {
+      std::pair<uint64_t, uint64_t> Range(A.BeginOffset, A.EndOffset);
+      if (Overlaps(Slot, Range) && !A.IsSplittable && Range != Slot)
         return false;
     }
   }
@@ -6533,6 +6599,71 @@ static SelectInst *unfoldTwoSlotGEP(const TwoSlotGEP &TS, IRBuilderTy &IRB) {
   GEP->eraseFromParent();
   ++NumTwoSlotGEPsUnfolded;
   return cast<SelectInst>(Sel);
+}
+
+/// Rewrite the two-slot GEPs of the allocas in \p F to constant-offset
+/// accesses, when the allocas can then be split and the slots promoted.
+///
+/// Each two-slot GEP is unfolded into a select between its two slots, and the
+/// loads and stores through the select are speculated or predicated. The
+/// rewritten allocas are queued to be split.
+std::pair<bool /*Changed*/, bool /*CFGChanged*/>
+SROA::unfoldTwoSlotGEPs(Function &F) {
+  assert(!PreserveCFG && "Predicating stores requires modifying the CFG");
+  const DataLayout &DL = F.getDataLayout();
+
+  // Collect the allocas first, as predicating stores can split the entry
+  // block.
+  SmallVector<AllocaInst *, 4> Candidates;
+  for (Instruction &I : F.getEntryBlock()) {
+    auto *AI = dyn_cast<AllocaInst>(&I);
+    if (AI && any_of(AI->users(), [](User *U) {
+          auto *GEP = dyn_cast<GetElementPtrInst>(U);
+          return GEP && !GEP->hasAllConstantIndices();
+        }))
+      Candidates.push_back(AI);
+  }
+
+  bool Changed = false;
+  bool CFGChanged = false;
+  for (AllocaInst *AI : Candidates) {
+    std::optional<TypeSize> Size = AI->getAllocationSize(DL);
+    if (AI->isArrayAllocation() || !Size || Size->isScalable() ||
+        Size->isZero())
+      continue;
+
+    TwoSlotGEPFinder Finder(DL, Size->getFixedValue());
+    TwoSlotGEPFinder::PtrInfo PtrI = Finder.visitPtr(*AI);
+    if (PtrI.isEscaped() || PtrI.isAborted()) {
+      LLVM_DEBUG(dbgs() << "SROA can't unfold two-slot GEPs of alloca: " << *AI
+                        << "\n  unhandled use: "
+                        << (PtrI.isEscaped() ? *PtrI.getEscapingInst()
+                                             : *PtrI.getAbortingInst())
+                        << "\n");
+      continue;
+    }
+    if (Finder.TwoSlotGEPs.empty())
+      continue;
+    if (!canPromoteTwoSlotGEPs(Finder.TwoSlotGEPs, Finder.Accesses)) {
+      LLVM_DEBUG(dbgs() << "SROA can't unfold two-slot GEPs of alloca: " << *AI
+                        << "\n  slots overlap other accesses\n");
+      continue;
+    }
+
+    LLVM_DEBUG(dbgs() << "SROA unfolding two-slot GEPs of alloca: " << *AI
+                      << "\n");
+    IRBuilderTy IRB(AI);
+    for (const TwoSlotGEP &TS : Finder.TwoSlotGEPs) {
+      SelectInst *Sel = unfoldTwoSlotGEP(TS, IRB);
+      std::optional<RewriteableMemOps> Ops =
+          isSafeSelectToSpeculate(*Sel, PreserveCFG);
+      assert(Ops && "Simple loads and stores can always be rewritten");
+      CFGChanged |= rewriteSelectInstMemOps(*Sel, *Ops, IRB, DTU);
+    }
+    Worklist.insert(AI);
+    Changed = true;
+  }
+  return {Changed, CFGChanged};
 }
 
 /// Analyze an alloca for SROA.
@@ -6573,30 +6704,7 @@ SROA::runOnAlloca(AllocaInst &AI) {
   if (AS.isEscaped())
     return {Changed, CFGChanged};
 
-  // If the alloca can be sliced and promoted once the two-slot GEPs are
-  // rewritten to constant offsets, rewrite the GEPs `select`s and revisit the
-  // alloca.
-  if (!AS.getTwoSlotGEPs().empty() && !AS.isEscapedReadOnly() && !PreserveCFG &&
-      canPromoteTwoSlotGEPs(AS)) {
-    for (const TwoSlotGEP &TS : AS.getTwoSlotGEPs()) {
-      SelectInst *Sel = unfoldTwoSlotGEP(TS, IRB);
-      std::optional<RewriteableMemOps> Ops =
-          isSafeSelectToSpeculate(*Sel, PreserveCFG);
-      assert(Ops && "Simple loads and stores can always be rewritten");
-      CFGChanged |= rewriteSelectInstMemOps(*Sel, *Ops, IRB, DTU);
-    }
-    Worklist.insert(&AI);
-    return {true, CFGChanged};
-  }
-
-  // TODO: Document this.
-  bool TwoSlotGEPsHaveStores = any_of(
-      AS.getTwoSlotGEPs(), [](const TwoSlotGEP &TS) { return TS.HasStores; });
-
-  if (TwoSlotGEPsHaveStores)
-    return {Changed, CFGChanged};
-
-  if (AS.isEscapedReadOnly() || !AS.getTwoSlotGEPs().empty()) {
+  if (AS.isEscapedReadOnly()) {
     Changed |= propagateStoredValuesToLoads(AI, AS);
     return {Changed, CFGChanged};
   }
@@ -6752,6 +6860,16 @@ std::pair<bool /*Changed*/, bool /*CFGChanged*/> SROA::runSROA(Function &F) {
         PromotableAllocas.set_subtract(DeletedAllocas);
         DeletedAllocas.clear();
       }
+    }
+
+    // Once the worklist is empty, rewrite the two-slot GEPs of the remaining
+    // allocas, and visit the rewritten allocas again before promoting.
+    if (!PreserveCFG) {
+      auto [UnfoldChanged, UnfoldCFGChanged] = unfoldTwoSlotGEPs(F);
+      Changed |= UnfoldChanged;
+      CFGChanged |= UnfoldCFGChanged;
+      if (UnfoldChanged)
+        continue;
     }
 
     Changed |= promoteAllocas();
