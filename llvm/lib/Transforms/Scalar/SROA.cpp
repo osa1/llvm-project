@@ -6607,9 +6607,6 @@ static SelectInst *unfoldTwoSlotGEP(const TwoSlotGEP &TS, IRBuilderTy &IRB) {
 /// Each two-slot GEP is unfolded into a select between its two slots, and the
 /// loads and stores through the select are speculated or predicated. The
 /// rewritten allocas are queued to be split.
-///
-/// This also splits the FCA loads and stores of the allocas with variable-index
-/// GEPs, which can change the IR even if no alloca is queued.
 std::pair<bool /*Changed*/, bool /*CFGChanged*/>
 SROA::unfoldTwoSlotGEPs(Function &F) {
   assert(!PreserveCFG && "Predicating stores requires modifying the CFG");
@@ -6635,32 +6632,18 @@ SROA::unfoldTwoSlotGEPs(Function &F) {
         Size->isZero())
       continue;
 
-    // Split FCA loads and stores first, as `runOnAlloca` does, so that they
-    // don't look like unsplittable accesses overlapping the slots.
     IRBuilderTy IRB(AI);
-    AggLoadStoreRewriter AggRewriter(DL, IRB);
-    Changed |= AggRewriter.rewrite(*AI);
-
     TwoSlotGEPFinder Finder(DL, Size->getFixedValue());
     TwoSlotGEPFinder::PtrInfo PtrI = Finder.visitPtr(*AI);
     if (PtrI.isEscaped() || PtrI.isAborted()) {
-      LLVM_DEBUG(dbgs() << "SROA can't unfold two-slot GEPs of alloca: " << *AI
-                        << "\n  unhandled use: "
-                        << (PtrI.isEscaped() ? *PtrI.getEscapingInst()
-                                             : *PtrI.getAbortingInst())
-                        << "\n");
       continue;
     }
     if (Finder.TwoSlotGEPs.empty())
       continue;
     if (!canPromoteTwoSlotGEPs(Finder.TwoSlotGEPs, Finder.Accesses)) {
-      LLVM_DEBUG(dbgs() << "SROA can't unfold two-slot GEPs of alloca: " << *AI
-                        << "\n  slots overlap other accesses\n");
       continue;
     }
 
-    LLVM_DEBUG(dbgs() << "SROA unfolding two-slot GEPs of alloca: " << *AI
-                      << "\n");
     for (const TwoSlotGEP &TS : Finder.TwoSlotGEPs) {
       SelectInst *Sel = unfoldTwoSlotGEP(TS, IRB);
       std::optional<RewriteableMemOps> Ops =
@@ -6851,10 +6834,6 @@ std::pair<bool /*Changed*/, bool /*CFGChanged*/> SROA::runSROA(Function &F) {
   // the list of promotable allocas.
   SmallPtrSet<AllocaInst *, 4> DeletedAllocas;
 
-  // Rewrite the two-slot GEPs before visiting the allocas, so that the allocas
-  // are sliced with constant-offset accesses from the start, instead of first
-  // being handled as escaping. Two-slot GEPs that can only be rewritten after
-  // other allocas are promoted are handled when the worklist is empty.
   if (!PreserveCFG) {
     auto [UnfoldChanged, UnfoldCFGChanged] = unfoldTwoSlotGEPs(F);
     Changed |= UnfoldChanged;
@@ -6878,16 +6857,6 @@ std::pair<bool /*Changed*/, bool /*CFGChanged*/> SROA::runSROA(Function &F) {
         PromotableAllocas.set_subtract(DeletedAllocas);
         DeletedAllocas.clear();
       }
-    }
-
-    // Once the worklist is empty, rewrite the two-slot GEPs of the remaining
-    // allocas, and visit the rewritten allocas again before promoting.
-    if (!PreserveCFG) {
-      auto [UnfoldChanged, UnfoldCFGChanged] = unfoldTwoSlotGEPs(F);
-      Changed |= UnfoldChanged;
-      CFGChanged |= UnfoldCFGChanged;
-      if (!Worklist.empty())
-        continue;
     }
 
     Changed |= promoteAllocas();
