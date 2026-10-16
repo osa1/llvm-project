@@ -6612,8 +6612,7 @@ SROA::unfoldTwoSlotGEPs(Function &F) {
   assert(!PreserveCFG && "Predicating stores requires modifying the CFG");
   const DataLayout &DL = F.getDataLayout();
 
-  // Collect the allocas first, as predicating stores can split the entry
-  // block.
+  // Collect the allocas first, as predicating can split the entry block.
   SmallVector<AllocaInst *, 4> Candidates;
   for (Instruction &I : F.getEntryBlock()) {
     auto *AI = dyn_cast<AllocaInst>(&I);
