@@ -293,8 +293,6 @@ static void applyCommandLineOverridesToOptions(const ScalarOptions &Opts,
       valueOr(Opts.forward_switch_cond, Options.ForwardSwitchCondToPhi);
   Options.ConvertSwitchRangeToICmp =
       valueOr(Opts.switch_range_to_icmp, Options.ConvertSwitchRangeToICmp);
-  Options.ConvertSwitchToLookupTable =
-      valueOr(Opts.switch_to_lookup, Options.ConvertSwitchToLookupTable);
   Options.NeedCanonicalLoop =
       valueOr(Opts.keep_loops, Options.NeedCanonicalLoop);
   Options.HoistCommonInsts =
@@ -324,8 +322,6 @@ void SimplifyCFGPass::printPipeline(
      << "switch-range-to-icmp;";
   OS << (Options.ConvertSwitchToArithmetic ? "" : "no-")
      << "switch-to-arithmetic;";
-  OS << (Options.ConvertSwitchToLookupTable ? "" : "no-")
-     << "switch-to-lookup;";
   OS << (Options.NeedCanonicalLoop ? "" : "no-") << "keep-loops;";
   OS << (Options.HoistCommonInsts ? "" : "no-") << "hoist-common-insts;";
   OS << (Options.HoistLoadsStoresWithCondFaulting ? "" : "no-")

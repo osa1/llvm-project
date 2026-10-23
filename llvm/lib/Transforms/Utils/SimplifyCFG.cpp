@@ -7587,8 +7587,7 @@ static void reuseTableCompare(
 /// lookup tables.
 static bool simplifySwitchLookup(SwitchInst *SI, IRBuilder<> &Builder,
                                  DomTreeUpdater *DTU, const DataLayout &DL,
-                                 const TargetTransformInfo &TTI,
-                                 bool ConvertSwitchToLookupTable) {
+                                 const TargetTransformInfo &TTI) {
   assert(SI->getNumCases() > 1 && "Degenerate switch?");
 
   BasicBlock *BB = SI->getParent();
@@ -7754,8 +7753,6 @@ static bool simplifySwitchLookup(SwitchInst *SI, IRBuilder<> &Builder,
 
   bool AnyLookupTables = any_of(
       PhiToReplacementMap, [](auto &KV) { return KV.second.isLookupTable(); });
-  bool AnyBitMaps = any_of(PhiToReplacementMap,
-                           [](auto &KV) { return KV.second.isBitMap(); });
 
   // A few conditions prevent the generation of lookup tables:
   //     1. The target does not support lookup tables.
@@ -7766,12 +7763,6 @@ static bool simplifySwitchLookup(SwitchInst *SI, IRBuilder<> &Builder,
   if (AnyLookupTables &&
       (!TTI.shouldBuildLookupTables() ||
        Fn->getFnAttribute("no-jump-tables").getValueAsBool()))
-    return false;
-
-  // In the early optimization pipeline, disable formation of lookup tables,
-  // bit maps and mask checks, as they may inhibit further optimization.
-  if (!ConvertSwitchToLookupTable &&
-      (AnyLookupTables || AnyBitMaps || NeedMask))
     return false;
 
   Builder.SetInsertPoint(SI);
@@ -8661,13 +8652,8 @@ bool SimplifyCFGOpt::simplifySwitch(SwitchInst *SI, IRBuilder<> &Builder) {
   if (Options.ForwardSwitchCondToPhi && forwardSwitchConditionToPHI(SI))
     return requestResimplify();
 
-  // The conversion of switches to arithmetic or lookup table is disabled in
-  // the early optimization pipeline, as it may lose information or make the
-  // resulting code harder to analyze.
-  if (Options.ConvertSwitchToArithmetic || Options.ConvertSwitchToLookupTable)
-    if (simplifySwitchLookup(SI, Builder, DTU, DL, TTI,
-                             Options.ConvertSwitchToLookupTable))
-      return requestResimplify();
+  if (simplifySwitchLookup(SI, Builder, DTU, DL, TTI))
+    return requestResimplify();
 
   if (simplifySwitchOfPowersOfTwo(SI, Builder, DTU, DL, TTI))
     return requestResimplify();

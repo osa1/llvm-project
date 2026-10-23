@@ -404,7 +404,6 @@ void HexagonPassConfig::addIRPasses() {
       addPass(createCFGSimplificationPass(SimplifyCFGOptions()
                                               .forwardSwitchCondToPhi(true)
                                               .convertSwitchRangeToICmp(true)
-                                              .convertSwitchToLookupTable(true)
                                               .needCanonicalLoops(false)
                                               .hoistCommonInsts(true)
                                               .sinkCommonInsts(true)));

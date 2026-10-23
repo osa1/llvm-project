@@ -1323,7 +1323,6 @@ void PassBuilder::addVectorPasses(OptimizationLevel Level,
                                   .forwardSwitchCondToPhi(true)
                                   .convertSwitchRangeToICmp(true)
                                   .convertSwitchToArithmetic(true)
-                                  .convertSwitchToLookupTable(true)
                                   .needCanonicalLoops(false)
                                   .hoistCommonInsts(true)
                                   .sinkCommonInsts(true)));
