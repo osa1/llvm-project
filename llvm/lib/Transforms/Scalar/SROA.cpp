@@ -6588,68 +6588,6 @@ private:
 
 } // end anonymous namespace
 
-/// Check if the alloca can be split into two smaller ones with the given
-/// two-slot GEPs and constant-offset accesses.
-///
-/// The two-slot GEPs need to either overlap fully (no extending on either side)
-/// or should not overlap at all.
-///
-/// The GEPs can overlap with a known-offset access as long as the known-offset
-/// access can be split into smaller accesses.
-static bool
-canPromoteTwoSlotAlloca(ArrayRef<TwoSlotGEP> TwoSlotGEPs,
-                        ArrayRef<TwoSlotAllocaFinder::Access> Accesses) {
-  SmallVector<std::pair<uint64_t, uint64_t>, 4> Slots;
-  for (const TwoSlotGEP &TS : TwoSlotGEPs)
-    for (uint64_t Offset : {TS.Offset0, TS.Offset1})
-      Slots.emplace_back(Offset, Offset + TS.Size);
-
-  auto Overlaps = [](std::pair<uint64_t, uint64_t> A,
-                     std::pair<uint64_t, uint64_t> B) {
-    return A.first < B.second && B.first < A.second;
-  };
-
-  for (auto Slot : Slots) {
-    // The slots should overlap fully (no extending to either side) or should
-    // not overlap at all.
-    if (any_of(Slots, [&](auto Other) {
-          return Other != Slot && Overlaps(Slot, Other);
-        }))
-      return false;
-
-    // Allow constant-offset accesses to overlap with the slots as long as the
-    // constant-offset accesses can be split into smaller accesses.
-    for (const TwoSlotAllocaFinder::Access &A : Accesses) {
-      std::pair<uint64_t, uint64_t> Range(A.BeginOffset, A.EndOffset);
-
-      if (!Overlaps(Slot, Range)) {
-        // Known-offset access doesn't overlap with the slot.
-        continue;
-      }
-
-      if (Range == Slot) {
-        // Known-offset access fully overlaps with the slot.
-        continue;
-      }
-
-      if (A.IsSplittable) {
-        // Known-offset access partially overlaps with the slot: we need to be
-        // able to split if, otherwise we can't split the alloca.
-        return false;
-      }
-
-      // TODO: This is not in sync with `presplitLoadsAndStores`: there are
-      // cases where we don't split an access even when it's splittable.
-      // Understand `presplitLoadsAndStores` and check for rest of the
-      // conditions here so that we won't transform a GEP unless it'll allow
-      // splitting.
-      // Tests `overlapping_access_partial_{1,2}` show transformed GEPs that
-      // don't allow splitting the alloca.
-    }
-  }
-  return true;
-}
-
 /// %gep = gep inbounds nuw [2 x i32], ptr %alloca, i64 0, i64 %idx
 /// ==>
 /// %gep.sroa.idx = icmp eq i64 %idx, <Idx1>
@@ -6733,9 +6671,6 @@ SROA::unfoldTwoSlotGEPs(Function &F) {
     }
 
     if (Finder.TwoSlotGEPs.empty())
-      continue;
-
-    if (!canPromoteTwoSlotAlloca(Finder.TwoSlotGEPs, Finder.Accesses))
       continue;
 
     for (const TwoSlotGEP &TS : Finder.TwoSlotGEPs) {
