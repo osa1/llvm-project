@@ -6661,7 +6661,6 @@ bool SROA::unfoldTwoSlotGEPs(Function &F) {
         Size->isZero())
       continue;
 
-    IRBuilderTy IRB(AI);
     TwoSlotAllocaFinder Finder(DL, Size->getFixedValue());
     TwoSlotAllocaFinder::PtrInfo PtrI = Finder.visitPtr(*AI);
 
@@ -6671,6 +6670,7 @@ bool SROA::unfoldTwoSlotGEPs(Function &F) {
     if (Finder.TwoSlotGEPs.empty())
       continue;
 
+    IRBuilderTy IRB(AI);
     for (const TwoSlotGEP &TS : Finder.TwoSlotGEPs)
       unfoldTwoSlotGEP(TS, IRB);
 
