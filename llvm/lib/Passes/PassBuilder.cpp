@@ -1504,15 +1504,21 @@ Expected<SROAOptions> parseSROAOptions(StringRef Params) {
       SawCFGOption = true;
     } else if (ParamName == "aggregate-to-vector") {
       Result.AggregateToVector = true;
+    } else if (ParamName == "unfold-two-slot-geps") {
+      Result.UnfoldTwoSlotGEPs = true;
     } else {
       return make_error<StringError>(
           formatv("invalid SROA pass parameter '{}' (expected preserve-cfg, "
-                  "modify-cfg, or aggregate-to-vector)",
+                  "modify-cfg, aggregate-to-vector, or unfold-two-slot-geps)",
                   ParamName)
               .str(),
           inconvertibleErrorCode());
     }
   }
+  if (Result.UnfoldTwoSlotGEPs && Result.CFG == SROAOptions::PreserveCFG)
+    return make_error<StringError>(
+        "SROA pass parameter unfold-two-slot-geps requires modify-cfg",
+        inconvertibleErrorCode());
   return Result;
 }
 

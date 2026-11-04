@@ -26,9 +26,12 @@ struct SROAOptions {
 
   CFGOption CFG;
   bool AggregateToVector;
+  bool UnfoldTwoSlotGEPs;
 
-  SROAOptions(CFGOption CFG = PreserveCFG, bool AggregateToVector = false)
-      : CFG(CFG), AggregateToVector(AggregateToVector) {}
+  SROAOptions(CFGOption CFG = PreserveCFG, bool AggregateToVector = false,
+              bool UnfoldTwoSlotGEPs = false)
+      : CFG(CFG), AggregateToVector(AggregateToVector),
+        UnfoldTwoSlotGEPs(UnfoldTwoSlotGEPs) {}
 };
 
 class SROAPass : public OptionalPassInfoMixin<SROAPass> {

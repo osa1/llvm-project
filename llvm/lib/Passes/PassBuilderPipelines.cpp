@@ -468,7 +468,9 @@ PassBuilder::buildO1FunctionSimplificationPipeline(OptimizationLevel Level,
                                               /*UseMemorySSA=*/false));
 
   // Delete small array after loop unroll.
-  FPM.addPass(SROAPass(SROAOptions::ModifyCFG));
+  FPM.addPass(SROAPass(SROAOptions(SROAOptions::ModifyCFG,
+                                   /*AggregateToVector=*/false,
+                                   /*UnfoldTwoSlotGEPs=*/true)));
 
   // Specially optimize memory movement as it doesn't look like dataflow in SSA.
   FPM.addPass(MemCpyOptPass());
@@ -651,7 +653,9 @@ PassBuilder::buildFunctionSimplificationPipeline(OptimizationLevel Level,
                                               /*UseMemorySSA=*/false));
 
   // Delete small array after loop unroll.
-  FPM.addPass(SROAPass(SROAOptions::ModifyCFG));
+  FPM.addPass(SROAPass(SROAOptions(SROAOptions::ModifyCFG,
+                                   /*AggregateToVector=*/false,
+                                   /*UnfoldTwoSlotGEPs=*/true)));
 
   // Try vectorization/scalarization transforms that are both improvements
   // themselves and can allow further folds with GVN and InstCombine.

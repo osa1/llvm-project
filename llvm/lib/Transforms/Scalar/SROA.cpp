@@ -176,6 +176,7 @@ class SROA {
   AssumptionCache *const AC;
   const bool PreserveCFG;
   const bool AggregateToVector;
+  const bool UnfoldTwoSlotGEPs;
 
   /// Worklist of alloca instructions to simplify.
   ///
@@ -275,7 +276,8 @@ public:
        SROAOptions Options)
       : C(C), DTU(DTU), AC(AC),
         PreserveCFG(Options.CFG == SROAOptions::PreserveCFG),
-        AggregateToVector(Options.AggregateToVector) {}
+        AggregateToVector(Options.AggregateToVector),
+        UnfoldTwoSlotGEPs(Options.UnfoldTwoSlotGEPs) {}
 
   /// Main run method used by both the SROAPass and by the legacy pass.
   std::pair<bool /*Changed*/, bool /*CFGChanged*/> runSROA(Function &F);
@@ -6706,7 +6708,7 @@ SROA::runOnAlloca(AllocaInst &AI) {
   // Unfolding the GEPs is only useful when we can split the alloca and then
   // promote the smaller allocas. Promotion requires predication, which modified
   // the CFG, so only unfold when we're allowed to modify the CFG.
-  if (!PreserveCFG)
+  if (UnfoldTwoSlotGEPs && !PreserveCFG)
     Changed |= unfoldTwoSlotGEPsOfAlloca(AI);
 
   // Split any FCA loads and stores touching this alloca to promote better
@@ -6922,6 +6924,8 @@ void SROAPass::printPipeline(
                                                  : "modify-cfg");
   if (Options.AggregateToVector)
     OS << ";aggregate-to-vector";
+  if (Options.UnfoldTwoSlotGEPs)
+    OS << ";unfold-two-slot-geps";
   OS << '>';
 }
 
