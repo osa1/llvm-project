@@ -6612,7 +6612,8 @@ private:
 /// %gep.sroa.slot1 = gep nusw i8, ptr %alloca, i64 <Offset1>
 /// %gep.sroa.sel = select i1 %gep.sroa.idx,
 ///                   ptr %gep.sroa.slot1, ptr %gep.sroa.slot0
-static SelectInst *unfoldTwoSlotGEP(const TwoSlotGEP &TS, IRBuilderTy &IRB) {
+static SelectInst *unfoldTwoSlotGEP(const TwoSlotGEP &TS, IRBuilderTy &IRB,
+                                    AssumptionCache &AC) {
   GetElementPtrInst *GEP = TS.GEP;
   IRB.SetInsertPoint(GEP);
   Type *OffsetTy = GEP->getDataLayout().getIndexType(GEP->getType());
@@ -6622,10 +6623,19 @@ static SelectInst *unfoldTwoSlotGEP(const TwoSlotGEP &TS, IRBuilderTy &IRB) {
                             GEP->getName() + Name, GEP->getNoWrapFlags());
   };
   Value *Cond = IRB.CreateICmpEQ(TS.Idx, TS.Idx1, GEP->getName() + ".sroa.idx");
+  Value *Off = TS.Idx;
+  if (!TS.Idx1->isOne())
+    Off = IRB.CreateSub(
+        TS.Idx, ConstantInt::get(TS.Idx1->getType(), TS.Idx1->getValue() - 1));
+  Value *InBounds = IRB.CreateICmpULT(Off, ConstantInt::get(Off->getType(), 2));
   Value *Slot0 = CreateSlot(TS.Offset0, ".sroa.slot0");
   Value *Slot1 = CreateSlot(TS.Offset1, ".sroa.slot1");
   Value *Sel = IRB.CreateSelectWithUnknownProfile(
       Cond, Slot1, Slot0, DEBUG_TYPE, GEP->getName() + ".sroa.sel");
+  for (User *U : GEP->users()) {
+    IRB.SetInsertPoint(cast<Instruction>(U));
+    AC.registerAssumption(cast<AssumeInst>(IRB.CreateAssumption(InBounds)));
+  }
   GEP->replaceAllUsesWith(Sel);
   GEP->eraseFromParent();
   ++NumTwoSlotGEPsUnfolded;
@@ -6671,7 +6681,7 @@ bool SROA::unfoldTwoSlotGEPsOfAlloca(AllocaInst &AI) {
 
   IRBuilderTy IRB(&AI);
   for (const TwoSlotGEP &TS : Finder.TwoSlotGEPs)
-    unfoldTwoSlotGEP(TS, IRB);
+    unfoldTwoSlotGEP(TS, IRB, *AC);
 
   return true;
 }

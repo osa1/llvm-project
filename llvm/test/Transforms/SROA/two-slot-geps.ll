@@ -7,6 +7,8 @@ define i32 @minimal(i64 %idx, i32 %a, i32 %b) {
 ; CHECK-LABEL: define i32 @minimal(
 ; CHECK-SAME: i64 [[IDX:%.*]], i32 [[A:%.*]], i32 [[B:%.*]]) {
 ; CHECK-NEXT:    [[GEP_SROA_IDX:%.*]] = icmp eq i64 [[IDX]], 1
+; CHECK-NEXT:    [[TMP1:%.*]] = icmp ult i64 [[IDX]], 2
+; CHECK-NEXT:    call void @llvm.assume(i1 [[TMP1]])
 ; CHECK-NEXT:    [[V_SROA_SPECULATED:%.*]] = select i1 [[GEP_SROA_IDX]], i32 [[B]], i32 [[A]]
 ; CHECK-NEXT:    ret i32 [[V_SROA_SPECULATED]]
 ;
