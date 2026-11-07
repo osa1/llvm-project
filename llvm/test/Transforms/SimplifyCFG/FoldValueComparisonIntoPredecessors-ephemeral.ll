@@ -14,17 +14,18 @@ define void @branch(ptr %storage, i32 %idx) {
 ; CHECK-LABEL: define void @branch(
 ; CHECK-SAME: ptr [[STORAGE:%.*]], i32 [[IDX:%.*]]) {
 ; CHECK-NEXT:  [[ENTRY:.*:]]
-; CHECK-NEXT:    [[VALUELESS:%.*]] = icmp eq i32 [[IDX]], -1
-; CHECK-NEXT:    br i1 [[VALUELESS]], label %[[DONE:.*]], label %[[DISPATCH:.*]]
-; CHECK:       [[DISPATCH]]:
-; CHECK-NEXT:    [[IS0:%.*]] = icmp eq i32 [[IDX]], 0
-; CHECK-NEXT:    [[INRANGE:%.*]] = icmp ult i32 [[IDX]], 2
-; CHECK-NEXT:    call void @llvm.assume(i1 [[INRANGE]])
-; CHECK-NEXT:    br i1 [[IS0]], label %[[CALL0:.*]], label %[[CALL1:.*]]
+; CHECK-NEXT:    switch i32 [[IDX]], label %[[CALL1:.*]] [
+; CHECK-NEXT:      i32 -1, label %[[DONE:.*]]
+; CHECK-NEXT:      i32 0, label %[[CALL0:.*]]
+; CHECK-NEXT:    ]
 ; CHECK:       [[CALL0]]:
+; CHECK-NEXT:    [[INRANGE1:%.*]] = icmp ult i32 [[IDX]], 2
+; CHECK-NEXT:    call void @llvm.assume(i1 [[INRANGE1]])
 ; CHECK-NEXT:    call void @fun0(ptr [[STORAGE]], i32 [[IDX]])
 ; CHECK-NEXT:    br label %[[DONE]]
 ; CHECK:       [[CALL1]]:
+; CHECK-NEXT:    [[INRANGE2:%.*]] = icmp ult i32 [[IDX]], 2
+; CHECK-NEXT:    call void @llvm.assume(i1 [[INRANGE2]])
 ; CHECK-NEXT:    call void @fun1(ptr [[STORAGE]], i32 [[IDX]])
 ; CHECK-NEXT:    br label %[[DONE]]
 ; CHECK:       [[DONE]]:
@@ -56,22 +57,24 @@ define void @switch(ptr %storage, i32 %idx) {
 ; CHECK-LABEL: define void @switch(
 ; CHECK-SAME: ptr [[STORAGE:%.*]], i32 [[IDX:%.*]]) {
 ; CHECK-NEXT:  [[ENTRY:.*:]]
-; CHECK-NEXT:    [[VALUELESS:%.*]] = icmp eq i32 [[IDX]], -1
-; CHECK-NEXT:    br i1 [[VALUELESS]], label %[[DONE:.*]], label %[[DISPATCH:.*]]
-; CHECK:       [[DISPATCH]]:
-; CHECK-NEXT:    [[INRANGE:%.*]] = icmp ult i32 [[IDX]], 3
-; CHECK-NEXT:    call void @llvm.assume(i1 [[INRANGE]])
 ; CHECK-NEXT:    switch i32 [[IDX]], label %[[CALL2:.*]] [
+; CHECK-NEXT:      i32 -1, label %[[DONE:.*]]
 ; CHECK-NEXT:      i32 0, label %[[CALL0:.*]]
 ; CHECK-NEXT:      i32 1, label %[[CALL1:.*]]
 ; CHECK-NEXT:    ]
 ; CHECK:       [[CALL0]]:
+; CHECK-NEXT:    [[INRANGE2:%.*]] = icmp ult i32 [[IDX]], 3
+; CHECK-NEXT:    call void @llvm.assume(i1 [[INRANGE2]])
 ; CHECK-NEXT:    call void @fun0(ptr [[STORAGE]], i32 [[IDX]])
 ; CHECK-NEXT:    br label %[[DONE]]
 ; CHECK:       [[CALL1]]:
+; CHECK-NEXT:    [[INRANGE3:%.*]] = icmp ult i32 [[IDX]], 3
+; CHECK-NEXT:    call void @llvm.assume(i1 [[INRANGE3]])
 ; CHECK-NEXT:    call void @fun1(ptr [[STORAGE]], i32 [[IDX]])
 ; CHECK-NEXT:    br label %[[DONE]]
 ; CHECK:       [[CALL2]]:
+; CHECK-NEXT:    [[INRANGE1:%.*]] = icmp ult i32 [[IDX]], 3
+; CHECK-NEXT:    call void @llvm.assume(i1 [[INRANGE1]])
 ; CHECK-NEXT:    call void @fun2(ptr [[STORAGE]], i32 [[IDX]])
 ; CHECK-NEXT:    br label %[[DONE]]
 ; CHECK:       [[DONE]]:
@@ -110,19 +113,19 @@ define void @switch_same_succ(ptr %storage, i32 %idx) {
 ; CHECK-LABEL: define void @switch_same_succ(
 ; CHECK-SAME: ptr [[STORAGE:%.*]], i32 [[IDX:%.*]]) {
 ; CHECK-NEXT:  [[ENTRY:.*:]]
-; CHECK-NEXT:    [[VALUELESS:%.*]] = icmp eq i32 [[IDX]], -1
-; CHECK-NEXT:    br i1 [[VALUELESS]], label %[[DONE:.*]], label %[[DISPATCH:.*]]
-; CHECK:       [[DISPATCH]]:
-; CHECK-NEXT:    [[INRANGE:%.*]] = icmp ult i32 [[IDX]], 3
-; CHECK-NEXT:    call void @llvm.assume(i1 [[INRANGE]])
 ; CHECK-NEXT:    switch i32 [[IDX]], label %[[CALL1:.*]] [
+; CHECK-NEXT:      i32 -1, label %[[DONE:.*]]
 ; CHECK-NEXT:      i32 0, label %[[CALL0:.*]]
 ; CHECK-NEXT:      i32 1, label %[[CALL0]]
 ; CHECK-NEXT:    ]
 ; CHECK:       [[CALL0]]:
+; CHECK-NEXT:    [[INRANGE2:%.*]] = icmp ult i32 [[IDX]], 3
+; CHECK-NEXT:    call void @llvm.assume(i1 [[INRANGE2]])
 ; CHECK-NEXT:    call void @fun0(ptr [[STORAGE]], i32 [[IDX]])
 ; CHECK-NEXT:    br label %[[DONE]]
 ; CHECK:       [[CALL1]]:
+; CHECK-NEXT:    [[INRANGE1:%.*]] = icmp ult i32 [[IDX]], 3
+; CHECK-NEXT:    call void @llvm.assume(i1 [[INRANGE1]])
 ; CHECK-NEXT:    call void @fun1(ptr [[STORAGE]], i32 [[IDX]])
 ; CHECK-NEXT:    br label %[[DONE]]
 ; CHECK:       [[DONE]]:
@@ -156,18 +159,20 @@ define void @assume_chain(ptr %storage, i32 %idx) {
 ; CHECK-LABEL: define void @assume_chain(
 ; CHECK-SAME: ptr [[STORAGE:%.*]], i32 [[IDX:%.*]]) {
 ; CHECK-NEXT:  [[ENTRY:.*:]]
-; CHECK-NEXT:    [[VALUELESS:%.*]] = icmp eq i32 [[IDX]], -1
-; CHECK-NEXT:    br i1 [[VALUELESS]], label %[[DONE:.*]], label %[[DISPATCH:.*]]
-; CHECK:       [[DISPATCH]]:
-; CHECK-NEXT:    [[IS0:%.*]] = icmp eq i32 [[IDX]], 0
-; CHECK-NEXT:    [[ADD:%.*]] = add i32 [[IDX]], 1
-; CHECK-NEXT:    [[INRANGE:%.*]] = icmp ult i32 [[ADD]], 3
-; CHECK-NEXT:    call void @llvm.assume(i1 [[INRANGE]])
-; CHECK-NEXT:    br i1 [[IS0]], label %[[CALL0:.*]], label %[[CALL1:.*]]
+; CHECK-NEXT:    switch i32 [[IDX]], label %[[CALL1:.*]] [
+; CHECK-NEXT:      i32 -1, label %[[DONE:.*]]
+; CHECK-NEXT:      i32 0, label %[[CALL0:.*]]
+; CHECK-NEXT:    ]
 ; CHECK:       [[CALL0]]:
+; CHECK-NEXT:    [[ADD1:%.*]] = add i32 [[IDX]], 1
+; CHECK-NEXT:    [[INRANGE2:%.*]] = icmp ult i32 [[ADD1]], 3
+; CHECK-NEXT:    call void @llvm.assume(i1 [[INRANGE2]])
 ; CHECK-NEXT:    call void @fun0(ptr [[STORAGE]], i32 [[IDX]])
 ; CHECK-NEXT:    br label %[[DONE]]
 ; CHECK:       [[CALL1]]:
+; CHECK-NEXT:    [[ADD3:%.*]] = add i32 [[IDX]], 1
+; CHECK-NEXT:    [[INRANGE4:%.*]] = icmp ult i32 [[ADD3]], 3
+; CHECK-NEXT:    call void @llvm.assume(i1 [[INRANGE4]])
 ; CHECK-NEXT:    call void @fun1(ptr [[STORAGE]], i32 [[IDX]])
 ; CHECK-NEXT:    br label %[[DONE]]
 ; CHECK:       [[DONE]]:
@@ -200,16 +205,16 @@ define void @assume_bundle(ptr %storage, i32 %idx) {
 ; CHECK-LABEL: define void @assume_bundle(
 ; CHECK-SAME: ptr [[STORAGE:%.*]], i32 [[IDX:%.*]]) {
 ; CHECK-NEXT:  [[ENTRY:.*:]]
-; CHECK-NEXT:    [[VALUELESS:%.*]] = icmp eq i32 [[IDX]], -1
-; CHECK-NEXT:    br i1 [[VALUELESS]], label %[[DONE:.*]], label %[[DISPATCH:.*]]
-; CHECK:       [[DISPATCH]]:
-; CHECK-NEXT:    [[IS0:%.*]] = icmp eq i32 [[IDX]], 0
-; CHECK-NEXT:    call void @llvm.assume(i1 true) [ "nonnull"(ptr [[STORAGE]]) ]
-; CHECK-NEXT:    br i1 [[IS0]], label %[[CALL0:.*]], label %[[CALL1:.*]]
+; CHECK-NEXT:    switch i32 [[IDX]], label %[[CALL1:.*]] [
+; CHECK-NEXT:      i32 -1, label %[[DONE:.*]]
+; CHECK-NEXT:      i32 0, label %[[CALL0:.*]]
+; CHECK-NEXT:    ]
 ; CHECK:       [[CALL0]]:
+; CHECK-NEXT:    call void @llvm.assume(i1 true) [ "nonnull"(ptr [[STORAGE]]) ]
 ; CHECK-NEXT:    call void @fun0(ptr [[STORAGE]], i32 [[IDX]])
 ; CHECK-NEXT:    br label %[[DONE]]
 ; CHECK:       [[CALL1]]:
+; CHECK-NEXT:    call void @llvm.assume(i1 true) [ "nonnull"(ptr [[STORAGE]]) ]
 ; CHECK-NEXT:    call void @fun1(ptr [[STORAGE]], i32 [[IDX]])
 ; CHECK-NEXT:    br label %[[DONE]]
 ; CHECK:       [[DONE]]:
@@ -244,14 +249,13 @@ define void @succ_with_other_pred(ptr %storage, i32 %idx, i1 %c) {
 ; CHECK-NEXT:  [[ENTRY:.*:]]
 ; CHECK-NEXT:    br i1 [[C]], label %[[HEAD:.*]], label %[[CALL1:.*]]
 ; CHECK:       [[HEAD]]:
-; CHECK-NEXT:    [[VALUELESS:%.*]] = icmp eq i32 [[IDX]], -1
-; CHECK-NEXT:    br i1 [[VALUELESS]], label %[[DONE:.*]], label %[[DISPATCH:.*]]
-; CHECK:       [[DISPATCH]]:
-; CHECK-NEXT:    [[IS0:%.*]] = icmp eq i32 [[IDX]], 0
-; CHECK-NEXT:    [[INRANGE:%.*]] = icmp ult i32 [[IDX]], 2
-; CHECK-NEXT:    call void @llvm.assume(i1 [[INRANGE]])
-; CHECK-NEXT:    br i1 [[IS0]], label %[[CALL0:.*]], label %[[CALL1]]
+; CHECK-NEXT:    switch i32 [[IDX]], label %[[CALL1]] [
+; CHECK-NEXT:      i32 -1, label %[[DONE:.*]]
+; CHECK-NEXT:      i32 0, label %[[CALL0:.*]]
+; CHECK-NEXT:    ]
 ; CHECK:       [[CALL0]]:
+; CHECK-NEXT:    [[INRANGE1:%.*]] = icmp ult i32 [[IDX]], 2
+; CHECK-NEXT:    call void @llvm.assume(i1 [[INRANGE1]])
 ; CHECK-NEXT:    call void @fun0(ptr [[STORAGE]], i32 [[IDX]])
 ; CHECK-NEXT:    br label %[[DONE]]
 ; CHECK:       [[CALL1]]:
@@ -294,20 +298,23 @@ define void @two_preds(ptr %storage, i32 %idx, i1 %c) {
 ; CHECK-NEXT:  [[ENTRY:.*:]]
 ; CHECK-NEXT:    br i1 [[C]], label %[[PRED1:.*]], label %[[PRED2:.*]]
 ; CHECK:       [[PRED1]]:
-; CHECK-NEXT:    [[VALUELESS1:%.*]] = icmp eq i32 [[IDX]], -1
-; CHECK-NEXT:    br i1 [[VALUELESS1]], label %[[DONE:.*]], label %[[DISPATCH:.*]]
+; CHECK-NEXT:    switch i32 [[IDX]], label %[[CALL1:.*]] [
+; CHECK-NEXT:      i32 -1, label %[[DONE:.*]]
+; CHECK-NEXT:      i32 0, label %[[CALL0:.*]]
+; CHECK-NEXT:    ]
 ; CHECK:       [[PRED2]]:
-; CHECK-NEXT:    [[VALUELESS2:%.*]] = icmp eq i32 [[IDX]], 5
-; CHECK-NEXT:    br i1 [[VALUELESS2]], label %[[DONE]], label %[[DISPATCH]]
-; CHECK:       [[DISPATCH]]:
-; CHECK-NEXT:    [[IS0:%.*]] = icmp eq i32 [[IDX]], 0
-; CHECK-NEXT:    [[INRANGE:%.*]] = icmp ult i32 [[IDX]], 2
-; CHECK-NEXT:    call void @llvm.assume(i1 [[INRANGE]])
-; CHECK-NEXT:    br i1 [[IS0]], label %[[CALL0:.*]], label %[[CALL1:.*]]
+; CHECK-NEXT:    switch i32 [[IDX]], label %[[CALL1]] [
+; CHECK-NEXT:      i32 5, label %[[DONE]]
+; CHECK-NEXT:      i32 0, label %[[CALL0]]
+; CHECK-NEXT:    ]
 ; CHECK:       [[CALL0]]:
+; CHECK-NEXT:    [[INRANGE1:%.*]] = icmp ult i32 [[IDX]], 2
+; CHECK-NEXT:    call void @llvm.assume(i1 [[INRANGE1]])
 ; CHECK-NEXT:    call void @fun0(ptr [[STORAGE]], i32 [[IDX]])
 ; CHECK-NEXT:    br label %[[DONE]]
 ; CHECK:       [[CALL1]]:
+; CHECK-NEXT:    [[INRANGE2:%.*]] = icmp ult i32 [[IDX]], 2
+; CHECK-NEXT:    call void @llvm.assume(i1 [[INRANGE2]])
 ; CHECK-NEXT:    call void @fun1(ptr [[STORAGE]], i32 [[IDX]])
 ; CHECK-NEXT:    br label %[[DONE]]
 ; CHECK:       [[DONE]]:
@@ -346,21 +353,18 @@ define void @switch_pseudoprobe(ptr %storage, i32 %idx) {
 ; CHECK-LABEL: define void @switch_pseudoprobe(
 ; CHECK-SAME: ptr [[STORAGE:%.*]], i32 [[IDX:%.*]]) {
 ; CHECK-NEXT:  [[ENTRY:.*:]]
-; CHECK-NEXT:    [[VALUELESS:%.*]] = icmp eq i32 [[IDX]], -1
-; CHECK-NEXT:    br i1 [[VALUELESS]], label %[[DONE:.*]], label %[[DISPATCH:.*]]
-; CHECK:       [[DISPATCH]]:
-; CHECK-NEXT:    call void @llvm.pseudoprobe(i64 0, i64 1, i32 0, i64 -1)
-; CHECK-NEXT:    switch i32 [[IDX]], label %[[CALL1:.*]] [
+; CHECK-NEXT:    switch i32 [[IDX]], label %[[CALL2:.*]] [
+; CHECK-NEXT:      i32 -1, label %[[DONE:.*]]
 ; CHECK-NEXT:      i32 0, label %[[CALL0:.*]]
-; CHECK-NEXT:      i32 1, label %[[CALL2:.*]]
+; CHECK-NEXT:      i32 1, label %[[CALL1:.*]]
 ; CHECK-NEXT:    ]
 ; CHECK:       [[CALL0]]:
 ; CHECK-NEXT:    call void @fun0(ptr [[STORAGE]], i32 [[IDX]])
 ; CHECK-NEXT:    br label %[[DONE]]
-; CHECK:       [[CALL2]]:
+; CHECK:       [[CALL1]]:
 ; CHECK-NEXT:    call void @fun1(ptr [[STORAGE]], i32 [[IDX]])
 ; CHECK-NEXT:    br label %[[DONE]]
-; CHECK:       [[CALL1]]:
+; CHECK:       [[CALL2]]:
 ; CHECK-NEXT:    call void @fun2(ptr [[STORAGE]], i32 [[IDX]])
 ; CHECK-NEXT:    br label %[[DONE]]
 ; CHECK:       [[DONE]]:
