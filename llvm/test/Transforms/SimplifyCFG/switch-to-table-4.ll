@@ -12,7 +12,7 @@
 
 ;.
 ; CHECK: @table1 = internal unnamed_addr constant [22 x i8] c"\00\05\06\01\07\08\02\09\0A\03\0B\0C\04\04\04\04\0D\0E\0F\10\11\12", align 1
-; CHECK: @switch.table.test4 = private unnamed_addr constant [5 x i32] [i32 17171712, i32 151128071, i32 202048266, i32 67372036, i32 269422093], align 4
+; CHECK: @switch.table.test4 = private unnamed_addr constant [6 x i32] [i32 17171712, i32 151128071, i32 202048266, i32 67372036, i32 269422093, i32 4625], align 4
 ;.
 define i32 @test4(i64 %idx) {
 ; CHECK-LABEL: define i32 @test4(

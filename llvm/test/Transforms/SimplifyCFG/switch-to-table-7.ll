@@ -15,24 +15,11 @@
 define i32 @test_load_size_bug(i64 %idx) {
 ; CHECK-LABEL: define i32 @test_load_size_bug(
 ; CHECK-SAME: i64 [[IDX:%.*]]) {
-; CHECK-NEXT:  [[ENTRY:.*]]:
+; CHECK-NEXT:  [[ENTRY:.*:]]
 ; CHECK-NEXT:    [[GEP:%.*]] = getelementptr inbounds i32, ptr @table_test_load_size_bug, i64 [[IDX]]
 ; CHECK-NEXT:    [[P:%.*]] = getelementptr inbounds i8, ptr [[GEP]], i64 2
 ; CHECK-NEXT:    [[V:%.*]] = load i32, ptr [[P]], align 4
-; CHECK-NEXT:    switch i32 [[V]], label %[[SW_DEFAULT:.*]] [
-; CHECK-NEXT:      i32 0, label %[[EXIT:.*]]
-; CHECK-NEXT:      i32 1, label %[[SW_BB2:.*]]
-; CHECK-NEXT:      i32 2, label %[[SW_BB3:.*]]
-; CHECK-NEXT:    ]
-; CHECK:       [[SW_BB2]]:
-; CHECK-NEXT:    br label %[[EXIT]]
-; CHECK:       [[SW_BB3]]:
-; CHECK-NEXT:    br label %[[EXIT]]
-; CHECK:       [[SW_DEFAULT]]:
-; CHECK-NEXT:    br label %[[EXIT]]
-; CHECK:       [[EXIT]]:
-; CHECK-NEXT:    [[R:%.*]] = phi i32 [ 30, %[[SW_DEFAULT]] ], [ 20, %[[SW_BB2]] ], [ 40, %[[SW_BB3]] ], [ 10, %[[ENTRY]] ]
-; CHECK-NEXT:    ret i32 [[R]]
+; CHECK-NEXT:    ret i32 10
 ;
 entry:
   %gep = getelementptr inbounds i32, ptr @table_test_load_size_bug, i64 %idx

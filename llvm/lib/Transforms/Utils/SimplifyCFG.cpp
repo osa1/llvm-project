@@ -7694,49 +7694,14 @@ static bool foldSwitchOnConstTableLoad(SwitchInst *SI, IRBuilder<> &Builder,
                                        const TargetTransformInfo &TTI,
                                        bool ConvertSwitchToLookupTable) {
   auto *LI = dyn_cast<LoadInst>(SI->getCondition());
-  if (!LI || LI->isVolatile())
+  if (!LI)
     return false;
 
-  // Check the underlying object before decomposing the pointer:
-  // `decomposeLinearExpression` doesn't terminate on cyclic GEPs, which can
-  // appear in blocks that become unreachable during SimplifyCFG.
-  auto *GV =
-      dyn_cast<GlobalVariable>(getUnderlyingObject(LI->getPointerOperand()));
-  if (!GV || !GV->isConstant() || !GV->hasDefinitiveInitializer())
+  std::optional<ConstGlobalIterator> GlobalIter =
+      ConstGlobalIterator::fromLoadInst(LI);
+  if (!GlobalIter)
     return false;
 
-  // Load offset = LIOperand.Offset + (LIOperand.Index * LIOperand.Scale)
-  LinearExpression LIOperand =
-      decomposeLinearExpression(DL, LI->getPointerOperand());
-
-  if (!LIOperand.Flags.isInBounds()) {
-    // We could still do this if
-    // - Scales of the original table and the new tables are the same.
-    // - Offset is 0.
-    // We'd also need to generate `inbounds` only if the original GEP has one.
-    // (currently `replaceSwitch` generates `inbounds` always)
-    return false;
-  }
-
-  if (LIOperand.BasePtr != GV || !LIOperand.Index)
-    return false;
-
-  // Because we map indices of the old global to indices of the new global
-  // directly, we can't handle the cases where the offset skips an element or
-  // more.
-  // Single ult below as shorthand for `0 <= offset && offset < scale`.
-  if (!LIOperand.Offset.ult(LIOperand.Scale))
-    return false;
-
-  Type *LoadEltTy = LI->getType();
-  const TypeSize GVSize = DL.getTypeAllocSize(GV->getValueType());
-  const TypeSize LoadSize = DL.getTypeStoreSize(LoadEltTy);
-
-  // Check that we can make at least one load.
-  if (LIOperand.Offset.getZExtValue() + LoadSize > GVSize)
-    return false;
-
-  Constant *Init = GV->getInitializer();
   BasicBlock *CommonDest = nullptr;
 
   // Maps loaded elements to the values of PHIs at the destination block
@@ -7744,13 +7709,7 @@ static bool foldSwitchOnConstTableLoad(SwitchInst *SI, IRBuilder<> &Builder,
   using ResultsTy = SmallVector<std::pair<PHINode *, Constant *>, 4>;
   SmallVector<ResultsTy, 64> EltResults;
 
-  const uint64_t Scale = LIOperand.Scale.getZExtValue();
-
-  // `Offset + LoadSize <= GVSize` checked above.
-  const uint64_t NumElts =
-      ((GVSize.getFixedValue() - LIOperand.Offset.getZExtValue() - LoadSize) /
-       Scale) +
-      1;
+  const uint64_t NumElts = GlobalIter->size();
 
   if (NumElts > MaxConstTableSwitchElts)
     return false;
@@ -7758,10 +7717,7 @@ static bool foldSwitchOnConstTableLoad(SwitchInst *SI, IRBuilder<> &Builder,
   // NB. We check above that offset < scale, so we don't have to consider
   // negative indices here and we can start at offset.
   for (uint64_t I = 0; I < NumElts; I += 1) {
-    APInt Offset = LIOperand.Offset + (I * Scale);
-
-    auto *Elt = dyn_cast_or_null<ConstantInt>(
-        ConstantFoldLoadFromConst(Init, LoadEltTy, Offset, DL));
+    auto *Elt = dyn_cast_or_null<ConstantInt>(GlobalIter->elementAt(I));
 
     if (!Elt)
       return false;
@@ -7785,7 +7741,7 @@ static bool foldSwitchOnConstTableLoad(SwitchInst *SI, IRBuilder<> &Builder,
   // Create replacements for the PHIs at the destination.
   Function *Fn = SI->getFunction();
   Module &M = *Fn->getParent();
-  IntegerType *IndexTy = cast<IntegerType>(LIOperand.Index->getType());
+  IntegerType *IndexTy = cast<IntegerType>(GlobalIter->expr().Index->getType());
   SmallVector<SwitchReplacement, 4> Replacements;
   for (auto [PhiIdx, PHI] : enumerate(PHIs)) {
     SmallVector<std::pair<ConstantInt *, Constant *>, 64> Values;
@@ -7810,9 +7766,10 @@ static bool foldSwitchOnConstTableLoad(SwitchInst *SI, IRBuilder<> &Builder,
                 .getFixedValue();
       }
     }
+    const GlobalVariable *GV = GlobalIter->Global();
     uint64_t RemovedBytes =
         GV->hasLocalLinkage() && isOnlyUsedByLoad(GV, LI) && LI->hasOneUser()
-            ? GVSize.getFixedValue()
+            ? DL.getTypeAllocSize(GV->getValueType())
             : 0;
     if (AddedBytes > RemovedBytes)
       return false;
@@ -7837,9 +7794,10 @@ static bool foldSwitchOnConstTableLoad(SwitchInst *SI, IRBuilder<> &Builder,
   Builder.SetInsertPoint(SI);
   Builder.CreateBr(LookupBB);
   Builder.SetInsertPoint(LookupBB);
+  Value *Index = GlobalIter->getIndex(Builder);
   for (auto [PHI, Replacement] : zip(PHIs, Replacements))
-    PHI->addIncoming(
-        Replacement.replaceSwitch(LIOperand.Index, Builder, DL, Fn), LookupBB);
+    PHI->addIncoming(Replacement.replaceSwitch(Index, Builder, DL, Fn),
+                     LookupBB);
   Builder.CreateBr(CommonDest);
 
   // Remove the switch.

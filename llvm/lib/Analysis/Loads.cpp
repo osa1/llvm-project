@@ -1120,12 +1120,12 @@ ConstGlobalIterator::fromLoadInst(LoadInst *LI) {
       divideCeil((GlobalSize.getFixedValue() - ConstOffset.getZExtValue()),
                  Stride.getZExtValue());
 
-  return ConstGlobalIterator(DL, Expr, ArrayElementCount, Init, EltTy);
+  return ConstGlobalIterator(DL, Expr, ArrayElementCount, GV, EltTy);
 }
 
 Constant *ConstGlobalIterator::elementAt(uint64_t Idx) const {
   APInt Offset = Expr.Offset + (Expr.Scale * Idx);
-  return ConstantFoldLoadFromConst(Init, EltTy, Offset, DL);
+  return ConstantFoldLoadFromConst(GV->getInitializer(), EltTy, Offset, DL);
 }
 
 Value *ConstGlobalIterator::getIndex(IRBuilderBase &Builder) const {

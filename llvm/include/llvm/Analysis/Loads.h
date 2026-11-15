@@ -245,12 +245,13 @@ class ConstGlobalIterator {
   const DataLayout &DL;
   LinearExpression Expr;
   uint64_t ArrayElementCount;
-  Constant *Init;
+  GlobalVariable *GV;
   Type *EltTy;
 
   ConstGlobalIterator(const DataLayout &DL, LinearExpression Expr,
-                      uint64_t ArrayElementCount, Constant *Init, Type *EltTy)
-      : DL(DL), Expr(Expr), ArrayElementCount(ArrayElementCount), Init(Init),
+                      uint64_t ArrayElementCount, GlobalVariable *GV,
+                      Type *EltTy)
+      : DL(DL), Expr(Expr), ArrayElementCount(ArrayElementCount), GV(GV),
         EltTy(EltTy) {}
 
 public:
@@ -261,6 +262,8 @@ public:
   uint64_t size() const { return ArrayElementCount; }
 
   const LinearExpression &expr() const { return Expr; }
+
+  const GlobalVariable *Global() const { return GV; }
 
   LLVM_ABI Value *getIndex(IRBuilderBase &Builder) const;
 };
