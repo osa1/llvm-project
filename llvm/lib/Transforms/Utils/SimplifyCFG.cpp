@@ -6923,6 +6923,15 @@ static Value *foldSwitchToSelect(const SwitchCaseResultVectorTy &ResultVector,
                         DefaultCase + BranchWeights[SecondCasePos]},
                        /*IsExpected=*/false, /*ElideAllZero=*/true);
     }
+    if (!DefaultResult) {
+      Value *SecondCompare =
+          Builder.CreateICmpEQ(Condition, SecondCase, "switch.selectcmp_else");
+      Value *AssumeCond =
+          Builder.CreateOr(ValueCompare, SecondCompare, "switch.assume");
+      CallInst *Assumption = Builder.CreateAssumption(AssumeCond);
+      if (AC)
+        AC->registerAssumption(cast<AssumeInst>(Assumption));
+    }
     return Ret;
   }
 
