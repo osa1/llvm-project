@@ -893,7 +893,9 @@ return:
 define i32 @unreachable_case(i32 %x)  {
 ; CHECK-LABEL: @unreachable_case(
 ; CHECK-NEXT:  entry:
-; CHECK-NEXT:    [[TMP0:%.*]] = icmp ult i32 [[X:%.*]], 9
+; CHECK-NEXT:    [[TMP2:%.*]] = icmp ne i32 [[X:%.*]], 3
+; CHECK-NEXT:    call void @llvm.assume(i1 [[TMP2]])
+; CHECK-NEXT:    [[TMP0:%.*]] = icmp ult i32 [[X]], 9
 ; CHECK-NEXT:    br i1 [[TMP0]], label [[SWITCH_LOOKUP:%.*]], label [[RETURN:%.*]]
 ; CHECK:       switch.lookup:
 ; CHECK-NEXT:    [[TMP1:%.*]] = zext nneg i32 [[X]] to i64
@@ -2439,6 +2441,8 @@ return:
 
 !0 = !{!"function_entry_count", i32 10}
 !1 = !{!"branch_weights", i32 3, i32 5, i32 7, i32 11, i32 13}
+;.
+; CHECK: attributes #[[ATTR0:[0-9]+]] = { nocallback nofree nosync nounwind willreturn memory(inaccessiblemem: write) }
 ;.
 ; CHECK: [[META0:![0-9]+]] = !{!"function_entry_count", i32 10}
 ; CHECK: [[PROF1]] = !{!"branch_weights", i32 36, i32 3}

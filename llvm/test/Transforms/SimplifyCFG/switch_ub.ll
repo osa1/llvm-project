@@ -9,12 +9,20 @@ define i32 @test_01(ptr %p, i32 %x, i1 %cond) {
 ; CHECK-LABEL: @test_01(
 ; CHECK-NEXT:  entry:
 ; CHECK-NEXT:    br i1 [[COND:%.*]], label [[BB:%.*]], label [[COMMON_RET:%.*]]
+; CHECK:       pred:
+; CHECK-NEXT:    [[TMP0:%.*]] = icmp ne i32 [[X:%.*]], 42
+; CHECK-NEXT:    call void @llvm.assume(i1 [[TMP0]])
+; CHECK-NEXT:    [[TMP1:%.*]] = icmp ne i32 [[X]], -654321
+; CHECK-NEXT:    call void @llvm.assume(i1 [[TMP1]])
+; CHECK-NEXT:    [[TMP2:%.*]] = icmp ne i32 [[X]], 123456
+; CHECK-NEXT:    call void @llvm.assume(i1 [[TMP2]])
+; CHECK-NEXT:    br label [[COMMON_RET1:%.*]]
 ; CHECK:       common.ret:
-; CHECK-NEXT:    [[COMMON_RET_OP:%.*]] = phi i32 [ [[R:%.*]], [[BB]] ], [ 0, [[ENTRY:%.*]] ]
+; CHECK-NEXT:    [[COMMON_RET_OP:%.*]] = phi i32 [ [[R:%.*]], [[BB]] ], [ 0, [[COMMON_RET]] ]
 ; CHECK-NEXT:    ret i32 [[COMMON_RET_OP]]
 ; CHECK:       bb:
 ; CHECK-NEXT:    [[R]] = load i32, ptr [[P:%.*]], align 4
-; CHECK-NEXT:    br label [[COMMON_RET]]
+; CHECK-NEXT:    br label [[COMMON_RET1]]
 ;
 entry:
   br i1 %cond, label %bb, label %pred
@@ -129,7 +137,13 @@ define i32 @test_04(ptr %p, i32 %x, i1 %cond) {
 ; CHECK-NEXT:  entry:
 ; CHECK-NEXT:    br i1 [[COND:%.*]], label [[BB:%.*]], label [[PRED:%.*]]
 ; CHECK:       pred:
-; CHECK-NEXT:    switch i32 [[X:%.*]], label [[COMMON_RET:%.*]] [
+; CHECK-NEXT:    [[TMP0:%.*]] = icmp ne i32 [[X:%.*]], 42
+; CHECK-NEXT:    call void @llvm.assume(i1 [[TMP0]])
+; CHECK-NEXT:    [[TMP1:%.*]] = icmp ne i32 [[X]], 123456
+; CHECK-NEXT:    call void @llvm.assume(i1 [[TMP1]])
+; CHECK-NEXT:    [[TMP2:%.*]] = icmp ne i32 [[X]], -654321
+; CHECK-NEXT:    call void @llvm.assume(i1 [[TMP2]])
+; CHECK-NEXT:    switch i32 [[X]], label [[COMMON_RET:%.*]] [
 ; CHECK-NEXT:      i32 3, label [[DO_3:%.*]]
 ; CHECK-NEXT:      i32 2, label [[DO_2:%.*]]
 ; CHECK-NEXT:      i32 1, label [[DO_1:%.*]]

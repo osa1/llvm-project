@@ -6,6 +6,8 @@ define i32 @f1(i1 %cond1, i8 %cond2) {
 ; CHECK-SAME: i1 [[COND1:%.*]], i8 [[COND2:%.*]]) {
 ; CHECK-NEXT:  [[ENTRY:.*:]]
 ; CHECK-NEXT:    call void @llvm.assume(i1 [[COND1]])
+; CHECK-NEXT:    [[TMP0:%.*]] = icmp ne i8 [[COND2]], 1
+; CHECK-NEXT:    call void @llvm.assume(i1 [[TMP0]])
 ; CHECK-NEXT:    ret i32 0
 ;
 entry:

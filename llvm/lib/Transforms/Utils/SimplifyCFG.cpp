@@ -6103,11 +6103,22 @@ bool SimplifyCFGOpt::simplifyUnreachable(UnreachableInst *UI) {
       if (DTU)
         Updates.push_back({DominatorTree::Delete, Predecessor, BB});
     } else if (auto *SI = dyn_cast<SwitchInst>(TI)) {
+      // Removing a case that leads to BB loses the fact that the condition
+      // never equals the case value. Preserve it with an assumption, unless
+      // the removed values still flow to BB through the default destination.
+      Value *Cond = SI->getCondition();
+      bool EmitAssumes = SI->getDefaultDest() != BB && !isa<Constant>(Cond);
       SwitchInstProfUpdateWrapper SU(*SI);
       for (auto i = SU->case_begin(), e = SU->case_end(); i != e;) {
         if (i->getCaseSuccessor() != BB) {
           ++i;
           continue;
+        }
+        if (EmitAssumes) {
+          CallInst *Assumption = Builder.CreateAssumption(
+              Builder.CreateICmpNE(Cond, i->getCaseValue()));
+          if (Options.AC)
+            Options.AC->registerAssumption(cast<AssumeInst>(Assumption));
         }
         BB->removePredecessor(SU->getParent());
         i = SU.removeCase(i);

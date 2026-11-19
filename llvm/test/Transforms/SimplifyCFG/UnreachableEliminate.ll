@@ -39,7 +39,9 @@ declare i32 @__gxx_personality_v0(...)
 define i32 @test3(i32 %v) {
 ; CHECK-LABEL: @test3(
 ; CHECK-NEXT:  entry:
-; CHECK-NEXT:    [[COND:%.*]] = icmp eq i32 [[V:%.*]], 2
+; CHECK-NEXT:    [[TMP0:%.*]] = icmp ne i32 [[V:%.*]], 1
+; CHECK-NEXT:    call void @llvm.assume(i1 [[TMP0]])
+; CHECK-NEXT:    [[COND:%.*]] = icmp eq i32 [[V]], 2
 ; CHECK-NEXT:    [[SPEC_SELECT:%.*]] = select i1 [[COND]], i32 2, i32 1
 ; CHECK-NEXT:    ret i32 [[SPEC_SELECT]]
 ;
@@ -943,7 +945,9 @@ declare i8 @get.i8()
 define i8 @udiv_by_zero(i8 %x, i8 %i, i8 %v) {
 ; CHECK-LABEL: @udiv_by_zero(
 ; CHECK-NEXT:  entry:
-; CHECK-NEXT:    switch i8 [[I:%.*]], label [[SW_DEFAULT:%.*]] [
+; CHECK-NEXT:    [[TMP0:%.*]] = icmp ne i8 [[I:%.*]], 0
+; CHECK-NEXT:    call void @llvm.assume(i1 [[TMP0]])
+; CHECK-NEXT:    switch i8 [[I]], label [[SW_DEFAULT:%.*]] [
 ; CHECK-NEXT:      i8 9, label [[SW_BB2:%.*]]
 ; CHECK-NEXT:      i8 2, label [[RETURN:%.*]]
 ; CHECK-NEXT:    ]
@@ -1174,7 +1178,9 @@ return:
 define i8 @sdiv_overflow_ub_2x(i8 %i) {
 ; CHECK-LABEL: @sdiv_overflow_ub_2x(
 ; CHECK-NEXT:  entry:
-; CHECK-NEXT:    switch i8 [[I:%.*]], label [[SW_DEFAULT:%.*]] [
+; CHECK-NEXT:    [[TMP0:%.*]] = icmp ne i8 [[I:%.*]], 0
+; CHECK-NEXT:    call void @llvm.assume(i1 [[TMP0]])
+; CHECK-NEXT:    switch i8 [[I]], label [[SW_DEFAULT:%.*]] [
 ; CHECK-NEXT:      i8 9, label [[RETURN:%.*]]
 ; CHECK-NEXT:      i8 2, label [[SW_BB1:%.*]]
 ; CHECK-NEXT:    ]
@@ -1243,6 +1249,64 @@ exit:
   %phi = phi i1 [ false, %entry ], [ false, %then ]
   tail call void @llvm.assume(i1 %phi)
   ret void
+}
+
+; Removing switch cases that lead to unreachable should preserve the fact that
+; the condition can't take those values.
+
+define i32 @switch_cases_unreachable(i32 %x) {
+; CHECK-LABEL: @switch_cases_unreachable(
+; CHECK-NEXT:  entry:
+; CHECK-NEXT:    [[TMP0:%.*]] = icmp ne i32 [[X:%.*]], 0
+; CHECK-NEXT:    call void @llvm.assume(i1 [[TMP0]])
+; CHECK-NEXT:    [[TMP1:%.*]] = icmp ne i32 [[X]], 2
+; CHECK-NEXT:    call void @llvm.assume(i1 [[TMP1]])
+; CHECK-NEXT:    [[COND:%.*]] = icmp eq i32 [[X]], 1
+; CHECK-NEXT:    [[SPEC_SELECT:%.*]] = select i1 [[COND]], i32 10, i32 20
+; CHECK-NEXT:    ret i32 [[SPEC_SELECT]]
+;
+entry:
+  switch i32 %x, label %default [
+  i32 0, label %unreach
+  i32 1, label %one
+  i32 2, label %unreach
+  ]
+
+unreach:
+  unreachable
+
+one:
+  ret i32 10
+
+default:
+  ret i32 20
+}
+
+; The removed values still reach unreachable through the default destination,
+; so no information is lost and no assumption is needed.
+
+define i32 @switch_case_and_default_unreachable(i32 %x) {
+; CHECK-LABEL: @switch_case_and_default_unreachable(
+; CHECK-NEXT:  entry:
+; CHECK-NEXT:    [[SWITCH_SELECTCMP:%.*]] = icmp eq i32 [[X:%.*]], 2
+; CHECK-NEXT:    [[SWITCH_SELECT:%.*]] = select i1 [[SWITCH_SELECTCMP]], i32 20, i32 10
+; CHECK-NEXT:    ret i32 [[SWITCH_SELECT]]
+;
+entry:
+  switch i32 %x, label %unreach [
+  i32 0, label %unreach
+  i32 1, label %one
+  i32 2, label %two
+  ]
+
+unreach:
+  unreachable
+
+one:
+  ret i32 10
+
+two:
+  ret i32 20
 }
 
 attributes #0 = { null_pointer_is_valid }
