@@ -21,6 +21,7 @@
 #include "llvm/Analysis/SparsePropagation.h"
 #include "llvm/Analysis/ValueLatticeUtils.h"
 #include "llvm/IR/Constants.h"
+#include "llvm/IR/InstIterator.h"
 #include "llvm/IR/MDBuilder.h"
 #include "llvm/IR/Module.h"
 #include "llvm/Transforms/IPO.h"
@@ -162,7 +163,7 @@ public:
   /// can be called.
   void ComputeInstructionState(
       Instruction &I,
-      SmallDenseMap<CVPLatticeKey, CVPLatticeVal, 16> &ChangedValues,
+      SmallMapVector<CVPLatticeKey, CVPLatticeVal, 16> &ChangedValues,
       SparseSolver<CVPLatticeKey, CVPLatticeVal> &SS) override {
     switch (I.getOpcode()) {
     case Instruction::Call:
@@ -233,7 +234,7 @@ private:
   /// the returned value state and the function's return state.
   void
   visitReturn(ReturnInst &I,
-              SmallDenseMap<CVPLatticeKey, CVPLatticeVal, 16> &ChangedValues,
+              SmallMapVector<CVPLatticeKey, CVPLatticeVal, 16> &ChangedValues,
               SparseSolver<CVPLatticeKey, CVPLatticeVal> &SS) {
     Function *F = I.getParent()->getParent();
     if (F->getReturnType()->isVoidTy())
@@ -250,7 +251,7 @@ private:
   /// with the returned value state of the called function.
   void
   visitCallBase(CallBase &CB,
-                SmallDenseMap<CVPLatticeKey, CVPLatticeVal, 16> &ChangedValues,
+                SmallMapVector<CVPLatticeKey, CVPLatticeVal, 16> &ChangedValues,
                 SparseSolver<CVPLatticeKey, CVPLatticeVal> &SS) {
     Function *F = CB.getCalledFunction();
     auto RegI = CVPLatticeKey(&CB, IPOGrouping::Register);
@@ -295,7 +296,7 @@ private:
   /// true and false value states.
   void
   visitSelect(SelectInst &I,
-              SmallDenseMap<CVPLatticeKey, CVPLatticeVal, 16> &ChangedValues,
+              SmallMapVector<CVPLatticeKey, CVPLatticeVal, 16> &ChangedValues,
               SparseSolver<CVPLatticeKey, CVPLatticeVal> &SS) {
     auto RegI = CVPLatticeKey(&I, IPOGrouping::Register);
     auto RegT = CVPLatticeKey(I.getTrueValue(), IPOGrouping::Register);
@@ -307,9 +308,10 @@ private:
   /// Handle load instructions. If the pointer operand of the load is a global
   /// variable, we attempt to track the value. The loaded value state is the
   /// merge of the loaded value state with the global variable state.
-  void visitLoad(LoadInst &I,
-                 SmallDenseMap<CVPLatticeKey, CVPLatticeVal, 16> &ChangedValues,
-                 SparseSolver<CVPLatticeKey, CVPLatticeVal> &SS) {
+  void
+  visitLoad(LoadInst &I,
+            SmallMapVector<CVPLatticeKey, CVPLatticeVal, 16> &ChangedValues,
+            SparseSolver<CVPLatticeKey, CVPLatticeVal> &SS) {
     auto RegI = CVPLatticeKey(&I, IPOGrouping::Register);
     if (auto *GV = dyn_cast<GlobalVariable>(I.getPointerOperand())) {
       auto MemGV = CVPLatticeKey(GV, IPOGrouping::Memory);
@@ -325,7 +327,7 @@ private:
   /// is the merge of the stored value state with the global variable state.
   void
   visitStore(StoreInst &I,
-             SmallDenseMap<CVPLatticeKey, CVPLatticeVal, 16> &ChangedValues,
+             SmallMapVector<CVPLatticeKey, CVPLatticeVal, 16> &ChangedValues,
              SparseSolver<CVPLatticeKey, CVPLatticeVal> &SS) {
     auto *GV = dyn_cast<GlobalVariable>(I.getPointerOperand());
     if (!GV)
@@ -338,9 +340,10 @@ private:
 
   /// Handle all other instructions. All other instructions are marked
   /// overdefined.
-  void visitInst(Instruction &I,
-                 SmallDenseMap<CVPLatticeKey, CVPLatticeVal, 16> &ChangedValues,
-                 SparseSolver<CVPLatticeKey, CVPLatticeVal> &SS) {
+  void
+  visitInst(Instruction &I,
+            SmallMapVector<CVPLatticeKey, CVPLatticeVal, 16> &ChangedValues,
+            SparseSolver<CVPLatticeKey, CVPLatticeVal> &SS) {
     // Simply bail if this instruction has no user.
     if (I.use_empty())
       return;
@@ -381,16 +384,28 @@ static bool runCVP(Module &M) {
 
   // Attach metadata to the indirect call sites that were collected indicating
   // the set of functions they can possibly target.
+  SmallPtrSetImpl<CallBase *> &IndirectCalls = Lattice.getIndirectCalls();
+  SmallPtrSet<Function *, 16> FunctionsWithIndirectCalls;
+  for (CallBase *C : IndirectCalls)
+    FunctionsWithIndirectCalls.insert(C->getFunction());
+
   bool Changed = false;
   MDBuilder MDB(M.getContext());
-  for (CallBase *C : Lattice.getIndirectCalls()) {
-    auto RegI = CVPLatticeKey(C->getCalledOperand(), IPOGrouping::Register);
-    CVPLatticeVal LV = Solver.getExistingValueState(RegI);
-    if (!LV.isFunctionSet() || LV.getFunctions().empty())
+  for (Function &F : M) {
+    if (!FunctionsWithIndirectCalls.contains(&F))
       continue;
-    MDNode *Callees = MDB.createCallees(LV.getFunctions());
-    C->setMetadata(LLVMContext::MD_callees, Callees);
-    Changed = true;
+    for (Instruction &I : instructions(F)) {
+      auto *C = dyn_cast<CallBase>(&I);
+      if (!C || !IndirectCalls.contains(C))
+        continue;
+      auto RegI = CVPLatticeKey(C->getCalledOperand(), IPOGrouping::Register);
+      CVPLatticeVal LV = Solver.getExistingValueState(RegI);
+      if (!LV.isFunctionSet() || LV.getFunctions().empty())
+        continue;
+      MDNode *Callees = MDB.createCallees(LV.getFunctions());
+      C->setMetadata(LLVMContext::MD_callees, Callees);
+      Changed = true;
+    }
   }
 
   return Changed;
