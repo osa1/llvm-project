@@ -3192,11 +3192,13 @@ blockCheapToDuplicateInSuccessors(BasicBlock *BB, const Value *Cond,
   for (Instruction &I : reverse(drop_end(*BB))) {
     if (isa<PseudoProbeInst>(I) || &I == Cond)
       continue;
+    // Check that the instruction is ephemeral before the more expensive
+    // attribute checks: most blocks fail here on the first instruction.
+    if (isa<PHINode>(I) || !EphTracker.track(&I))
+      return false;
     if (CallInst *CI = dyn_cast<CallInst>(&I))
       if (CI->cannotDuplicate() || CI->isConvergent())
         return false;
-    if (isa<PHINode>(I) || !EphTracker.track(&I))
-      return false;
     EphInsts.push_back(&I);
     if (EphInsts.size() > MaxEphemeralClones)
       return false;
