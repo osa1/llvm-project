@@ -3068,10 +3068,9 @@ class EphemeralValueTracker {
   bool isEphemeral(const Instruction *I) {
     if (isa<AssumeInst>(I))
       return true;
-    return !I->mayHaveSideEffects() && !I->isTerminator() &&
-           all_of(I->users(), [&](const User *U) {
-             return EphValues.count(cast<Instruction>(U));
-           });
+    return !I->isTerminator() && all_of(I->users(), [&](const User *U) {
+      return EphValues.count(cast<Instruction>(U));
+    }) && !I->mayHaveSideEffects();
   }
 
 public:
