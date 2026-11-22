@@ -3188,6 +3188,18 @@ public:
 static bool
 blockCheapToDuplicateInSuccessors(BasicBlock *BB, const Value *Cond,
                                   SmallVectorImpl<Instruction *> &EphInsts) {
+  // Fast path, before setting up the tracker. The last instruction other than
+  // the terminator and the condition cannot have ephemeral users, so it can
+  // only be ephemeral if it has no users. Most blocks are rejected here.
+  // Pseudo probes have no users and are handled by the loop below.
+  Instruction *Last = BB->getTerminator()->getPrevNode();
+  if (Last && Last == Cond)
+    Last = Last->getPrevNode();
+  if (!Last)
+    return true;
+  if (!Last->use_empty())
+    return false;
+
   EphemeralValueTracker EphTracker;
   for (Instruction &I : reverse(drop_end(*BB))) {
     if (isa<PseudoProbeInst>(I) || &I == Cond)
