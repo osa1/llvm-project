@@ -3157,10 +3157,11 @@ class EphemeralValueTracker {
   bool isEphemeral(const Instruction *I) {
     if (isa<AssumeInst>(I))
       return true;
-    return !I->mayHaveSideEffects() && !I->isTerminator() &&
-           all_of(I->users(), [&](const User *U) {
-             return EphValues.count(cast<Instruction>(U));
-           });
+    // Check the users before side effects: most instructions have a
+    // non-ephemeral user, and mayHaveSideEffects() is expensive for calls.
+    return !I->isTerminator() && all_of(I->users(), [&](const User *U) {
+      return EphValues.count(cast<Instruction>(U));
+    }) && !I->mayHaveSideEffects();
   }
 
 public:
